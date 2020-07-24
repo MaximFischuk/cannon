@@ -1,0 +1,23 @@
+{
+    "package": {
+        "name": "auto-upload",
+        "repo": "cannon",
+        "subject": "maximfischuk",
+        "vcs_url": "https://github.com/MaximFischuk/cannon.git",
+        "licenses": ["GPLv3"],
+        "labels": ["rust", "api", "rest", "test"],
+        "public_download_numbers": true,
+        "public_stats": true
+    },
+    "version": {
+        "name": "test",
+        "desc": "test version",
+        "released": "2020-07-24"
+    },
+    "files": [
+        {
+            "includePattern": "target/release/(rust-api-tool)",
+            "uploadPattern": "app/$1"
+        }
+    ]
+}

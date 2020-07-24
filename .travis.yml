@@ -8,3 +8,9 @@ cache: cargo
 script:
   - cargo build --verbose --all --release
   - cargo test --verbose --all --release
+deploy:
+  provider: bintray
+  file: ./deploy/descriptor.json
+  user: maximfischuk
+  key:
+    secure: AgP/txOiaWeCuQ5hQeoPKa4ZZAhzB9/6vG6B5FF1cuueItdgai5bk1A8FEbhgP/u3scAhkAnCT7I8/WxWgZuqfsHQXN6dFjQYTNuDiLyqSvZQHguXSfkJZ8Qj1paaRx8xmmV01NGz43NxXq/QrY56NRdLgzFQJk0Mr7telS3V12EoDbPUc3h7gzHpRhBWnq+gJZG3r+YS+NuGDKQ0NeS7YNTqxPxOB4TIh2e3xYoO34vlGXYL78vn9n0AX5MJ+X25GY4Iub/D69IwCnPdBXMF1IDSwcKdH0wHNRxMnza8rGOU9K2xHxjuIzlMHfhzGtmOsChUFIPhY2+5qmgRSG6t1jrd2Tqx9mRnz1qogCdxSp0dsuUSr0IgApPHA9EuTovRWuLLoqYJg5w7U11MIfCe6r1GFYhAZkLKryjVN7olQ9Y2/Vm8QhbIvGBVsrgHS6IIyNv+nv1LYhf/nqQroD6uqlLansgbPeVFq0PbtEGgtIjT1HMNaa8UkljgE6ZT6pxWn0ufhv3NxmEX8PoPd4LebF4FPW9golSpACAnXgYFpZA754DHnm4ODGApEKOU9CtBn9RdnEkanqi+S8GjXGKd3fBMO+QugD45VfGsWV8bwSeZj7ZYxApsp+eeLr7CSTQCBafTfelBvwF1oohcHDMRuV48GWTcWAjmLHX8DvEV90=
