@@ -20,9 +20,7 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
-      - run: cd main && cargo test --no-default-features
-      - run: cd proc-macro && cargo test
-      - run: cd tests && cargo test
+      - run: cargo test
 
   nightly_tests:
     name: Tests with nightly compiler
@@ -34,9 +32,7 @@ jobs:
           profile: minimal
           toolchain: nightly
           override: true
-      - run: cd main && cargo test --no-default-features
-      - run: cd proc-macro && cargo test
-      - run: cd tests && cargo test
+      - run: cargo test
 
   fmt:
     name: Rustfmt
