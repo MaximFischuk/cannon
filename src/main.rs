@@ -66,7 +66,10 @@ fn init_logging(level: LevelFilter, output: &Option<PathBuf>) {
                 "{}[{}:{}][{}] {}",
                 chrono::Local::now().format("[%Y-%m-%d][%H:%M:%S]"),
                 record.target(),
-                record.line().map(|v| v.to_string()).unwrap_or("".to_owned()),
+                record
+                    .line()
+                    .map(|v| v.to_string())
+                    .unwrap_or("".to_owned()),
                 record.level(),
                 message
             ))

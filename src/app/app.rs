@@ -33,7 +33,9 @@ impl App {
             for (key, value) in &entry.headers {
                 request = request.header(key, value);
             }
-            let prepared = request.body(App::build_body(&entry.body)).expect("Cannot create request");
+            let prepared = request
+                .body(App::build_body(&entry.body))
+                .expect("Cannot create request");
             let now = Instant::now();
             match self.client.request(prepared).await {
                 Ok(mut response) => {
@@ -54,7 +56,7 @@ impl App {
         match body_data {
             Some(BodyEntry::Raw(body)) => Body::from(body.to_string()),
             Some(BodyEntry::Uri(_body)) => Body::empty(),
-            None => Body::empty()
+            None => Body::empty(),
         }
     }
 }

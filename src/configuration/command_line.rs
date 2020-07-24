@@ -17,7 +17,7 @@ pub struct Opt {
     /// Set a custom configuration file. Supported: YAML, JSON, TOML, HJSON
     #[structopt(parse(from_os_str))]
     pub file: PathBuf,
-    
+
     /// Sets a logging level
     #[structopt(case_insensitive = true, long, short = "L", possible_values = &LogLevel::variants(), env = "LOG_LEVEL")]
     pub logging: Option<LogLevel>,
