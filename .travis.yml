@@ -11,4 +11,5 @@ script:
 deploy:
   provider: bintray
   file: ./deploy/descriptor.json
-  skip_cleanup: true
+  user: maximfischuk
+  cleanup: false
