@@ -1,0 +1,41 @@
+name: Example
+collect: mongodb://root:test123@localhost:27017
+pipeline:
+  test:
+    - name: Echo example
+      request: https://postman-echo.com/get?a={a}&b[0]={b}&b[1]={bc}
+      headers:
+        # Authorization: Bearer some-token
+        # Content-Type: application/json
+        Method: GET
+      vars:
+        path1: world
+        a: hello
+        b: Ukraine
+        bc: Kurwa
+      before:
+        js:
+          uri: file://./scripts/before1.js
+      after:
+        js:
+          code: |-
+            "use strict";
+            ctx.assert(ctx.response.status === 200);
+    - name: Echo example (POST)
+      request: https://postman-echo.com/post
+      headers:
+        Content-Type: application/json
+        Method: POST
+      body:
+        raw: |-
+          {
+            "test": "test",
+            "test1": {
+              "key": "value",
+              "array": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+            }
+          }
+    - name: Local echo test
+      request: http://localhost:65520/test
+      headers:
+        Method: POST
