@@ -9,6 +9,7 @@
 //#![deny(missing_docs)]
 
 extern crate chrono;
+extern crate derivative;
 extern crate hyper;
 extern crate serde_derive;
 
@@ -23,7 +24,7 @@ use signal_hook::{iterator::Signals, SIGINT};
 use std::{path::PathBuf, process::exit, thread};
 use structopt::StructOpt;
 
-use self::app::app::App;
+use self::app::App;
 use self::{
     configuration::command_line::{LogLevel, Opt},
     configuration::manifest::Manifest,
@@ -69,7 +70,7 @@ fn init_logging(level: LevelFilter, output: &Option<PathBuf>) {
                 record
                     .line()
                     .map(|v| v.to_string())
-                    .unwrap_or("".to_owned()),
+                    .unwrap_or_else(|| "".to_owned()),
                 record.level(),
                 message
             ))
@@ -77,9 +78,8 @@ fn init_logging(level: LevelFilter, output: &Option<PathBuf>) {
         .level(level)
         .chain(std::io::stdout());
 
-    match output {
-        Some(log_file) => dispatcher = dispatcher.chain(fern::log_file(log_file).unwrap()),
-        _ => { /* ignored */ }
+    if let Some(log_file) = output {
+        dispatcher = dispatcher.chain(fern::log_file(log_file).unwrap())
     }
     dispatcher.apply().unwrap();
     info!("Logging level {} enabled", level);
