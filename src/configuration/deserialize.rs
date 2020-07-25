@@ -22,3 +22,16 @@ pub mod uri {
         String::deserialize(deserializer).map(|v| Uri::from_str(v.as_str()).unwrap())
     }
 }
+
+pub mod http_method {
+    use hyper::Method;
+    use serde::{Deserialize, Deserializer};
+    use std::str::FromStr;
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Method, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        String::deserialize(deserializer).map(|v| Method::from_str(v.as_str()).unwrap())
+    }
+}

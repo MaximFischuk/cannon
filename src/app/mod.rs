@@ -3,7 +3,7 @@ use crate::configuration::manifest::Manifest;
 use hyper::body::to_bytes;
 use hyper::client::HttpConnector;
 use hyper::Client;
-use hyper::{Body, Method, Request};
+use hyper::{Body, Request};
 use hyper_tls::HttpsConnector;
 use std::time::Instant;
 
@@ -22,14 +22,9 @@ impl App {
         info!("Starting pipeline '{}'", self.manifest.name);
         for entry in &self.manifest.pipeline.test {
             info!("Test {}", entry.name);
-            let method = entry
-                .headers
-                .get(&"Method".to_owned())
-                .map(String::as_str)
-                .unwrap_or(&Method::GET.as_str());
             let mut request = Request::builder()
                 .uri(entry.generate_request_uri())
-                .method(method);
+                .method(&entry.method);
             for (key, value) in &entry.headers {
                 request = request.header(key, value);
             }

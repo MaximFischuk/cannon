@@ -1,3 +1,4 @@
+use hyper::Method;
 use serde_json::Value;
 use config::{Config, ConfigError, File};
 use derivative::*;
@@ -70,7 +71,11 @@ pub struct PipelineEntry {
     pub after: Option<Code>,
     pub name: String,
     pub request: String,
+    #[serde(with = "crate::configuration::deserialize::http_method")]
+    #[serde(default)]
+    pub method: Method,
     pub body: Option<BodyEntry>,
+    #[serde(default)]
     pub headers: HashMap<String, String>,
     #[serde(default)]
     pub vars: HashMap<String, String>,
