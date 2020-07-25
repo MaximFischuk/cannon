@@ -1,3 +1,4 @@
+use serde_json::Value;
 use config::{Config, ConfigError, File};
 use derivative::*;
 use hyper::http::uri::Uri;
@@ -33,6 +34,7 @@ pub enum VarEntry {
 #[serde(rename_all = "lowercase")]
 pub enum BodyEntry {
     Raw(String),
+    Json(Value),
     Uri(#[serde(with = "crate::configuration::deserialize::uri")] Uri),
 }
 

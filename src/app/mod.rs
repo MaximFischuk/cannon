@@ -55,6 +55,7 @@ impl App {
     fn build_body(body_data: &Option<BodyEntry>) -> Body {
         match body_data {
             Some(BodyEntry::Raw(body)) => Body::from(body.to_string()),
+            Some(BodyEntry::Json(body)) => Body::from(serde_json::to_string(body).unwrap()),
             Some(BodyEntry::Uri(_body)) => Body::empty(),
             None => Body::empty(),
         }
