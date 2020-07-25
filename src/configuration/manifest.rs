@@ -1,11 +1,11 @@
-use hyper::Method;
-use serde_json::Value;
 use config::{Config, ConfigError, File};
 use derivative::*;
 use hyper::http::uri::Uri;
+use hyper::Method;
 use jsonpath::Selector;
 use serde::export::fmt::Debug;
 use serde_derive::Deserialize;
+use serde_json::Value;
 use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::path::PathBuf;
