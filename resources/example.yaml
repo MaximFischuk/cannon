@@ -23,8 +23,10 @@ pipeline:
       method: POST
       headers:
         Content-Type: application/json
+        Authorization: Bearer {{token}}
       vars:
         in-json: test text
+        token: 43778f89af0267f02ab20d18
       body:
         raw: |-
           {

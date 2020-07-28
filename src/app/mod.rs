@@ -34,7 +34,10 @@ impl App {
                 .uri(entry.generate_request_uri())
                 .method(&entry.method);
             for (key, value) in &entry.headers {
-                request = request.header(key, value);
+                request = request.header(
+                    key,
+                    self.apply_body_template(value.to_string(), &entry.vars),
+                );
             }
             let prepared = request
                 .body(App::build_body(
