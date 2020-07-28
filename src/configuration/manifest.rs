@@ -3,6 +3,7 @@ use derivative::*;
 use hyper::http::uri::Uri;
 use hyper::Method;
 use jsonpath::Selector;
+use liquid::Object;
 use serde::export::fmt::Debug;
 use serde_derive::Deserialize;
 use serde_json::Value;
@@ -78,7 +79,7 @@ pub struct PipelineEntry {
     #[serde(default)]
     pub headers: HashMap<String, String>,
     #[serde(default)]
-    pub vars: HashMap<String, String>,
+    pub vars: Object,
     pub capture: Option<Capture>,
     // pub vars: HashMap<String, VarEntry>,
 }
@@ -96,10 +97,12 @@ impl Manifest {
 
 impl PipelineEntry {
     pub fn generate_request_uri(&self) -> Uri {
-        let mut uri_string: String = self.request.clone();
-        for (key, value) in &self.vars {
-            uri_string = uri_string.replace(format!("{{{}}}", key).as_str(), value.as_str());
-        }
-        Uri::try_from(&uri_string).unwrap()
+        let uri_string: String = self.request.clone();
+        let template = liquid::ParserBuilder::with_stdlib()
+            .build()
+            .unwrap()
+            .parse(uri_string.as_str())
+            .unwrap();
+        Uri::try_from(&template.render(&self.vars).unwrap()).unwrap()
     }
 }

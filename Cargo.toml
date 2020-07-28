@@ -1,11 +1,11 @@
 [package]
-name = "rust-api-test-tool"
+name = "cannon"
 version = "0.0.1"
 authors = ["MaximFischuk <mfischuk@vareger.com>"]
 edition = "2018"
 
 [[bin]]
-name = "rust-api-tool"
+name = "cannon"
 path = "./src/main.rs"
 
 [dependencies]
@@ -28,3 +28,4 @@ chrono = "0.4.13"
 hyper = "0.13.7"
 hyper-tls = "0.4.3"
 tokio = { version = "0.2", features = ["full"] }
+liquid = "0.21.1"
