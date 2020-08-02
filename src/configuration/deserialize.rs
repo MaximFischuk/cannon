@@ -35,3 +35,14 @@ pub mod http_method {
         String::deserialize(deserializer).map(|v| Method::from_str(v.as_str()).unwrap())
     }
 }
+
+pub mod base64_property {
+    use serde::{Deserialize, Deserializer};
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        String::deserialize(deserializer).map(|v| base64::decode(v).unwrap())
+    }
+}

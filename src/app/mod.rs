@@ -3,10 +3,12 @@ use crate::configuration::manifest::Manifest;
 use hyper::body::to_bytes;
 use hyper::client::HttpConnector;
 use hyper::Client;
+use hyper::Uri;
 use hyper::{Body, Request};
 use hyper_tls::HttpsConnector;
 use liquid::Object;
 use liquid::Parser;
+use std::fs;
 use std::time::Instant;
 
 pub struct App {
@@ -39,12 +41,16 @@ impl App {
                     self.apply_body_template(value.to_string(), &entry.vars),
                 );
             }
-            let prepared = request
-                .body(App::build_body(
-                    App::unwrap_body_entry(&entry.body)
-                        .map(|body| self.apply_body_template(body, &entry.vars)),
-                ))
-                .expect("Cannot create request");
+            let prepared;
+            if let Some(body_data) = App::unwrap_body_entry(&entry.body) {
+                let body = match String::from_utf8(body_data.clone()) {
+                    Ok(body) => Body::from(self.apply_body_template(body, &entry.vars)),
+                    Err(_) => Body::from(body_data),
+                };
+                prepared = request.body(body).expect("Cannot create request");
+            } else {
+                prepared = request.body(Body::empty()).expect("Cannot create request");
+            }
             let now = Instant::now();
             match self.client.request(prepared).await {
                 Ok(mut response) => {
@@ -66,19 +72,33 @@ impl App {
         template.render(values).unwrap()
     }
 
-    fn build_body(body: Option<String>) -> Body {
-        match body {
-            Some(body) => Body::from(body),
-            None => Body::empty(),
-        }
-    }
-
-    fn unwrap_body_entry(body_data: &Option<BodyEntry>) -> Option<String> {
+    fn unwrap_body_entry(body_data: &Option<BodyEntry>) -> Option<Vec<u8>> {
         match body_data {
-            Some(BodyEntry::Raw(body)) => Some(body.to_string()),
-            Some(BodyEntry::Json(body)) => Some(serde_json::to_string(body).unwrap()),
-            Some(BodyEntry::Uri(_body)) => None,
+            Some(BodyEntry::Raw(body)) => Some(Vec::from(body.as_bytes())),
+            Some(BodyEntry::Json(body)) => Some(serde_json::to_vec(body).unwrap()),
+            Some(BodyEntry::Uri(body)) => read_uri(body),
+            Some(BodyEntry::Base64(body)) => Some(base64::decode(body).unwrap()),
             None => None,
         }
     }
+}
+
+fn read_uri(uri: &Uri) -> Option<Vec<u8>> {
+    if let Some(scheme) = uri.scheme_str() {
+        return match scheme {
+            "file" => match fs::read(format!("{}{}", uri.authority().unwrap(), uri.path())) {
+                Ok(file_data) => Some(file_data),
+                Err(e) => {
+                    error!(
+                        "Failed to load file content from {} cause {}",
+                        uri.path(),
+                        e
+                    );
+                    None
+                }
+            },
+            _ => None,
+        };
+    }
+    None
 }

@@ -38,6 +38,7 @@ pub enum BodyEntry {
     Raw(String),
     Json(Value),
     Uri(#[serde(with = "crate::configuration::deserialize::uri")] Uri),
+    Base64(#[serde(with = "crate::configuration::deserialize::base64_property")] Vec<u8>),
 }
 
 #[derive(Deserialize, Derivative)]

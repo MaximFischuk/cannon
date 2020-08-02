@@ -33,12 +33,16 @@ pipeline:
             "test": "test",
             "test1": {
               "key": "value",
-              "template": "{{in-json | capitalize}}"
+              "template": "{{in-json | capitalize}}",
               "array": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
             }
           }
-      capture:
-        json: '$.request'
+      # capture:
+      #   - json: '$.data.test1.key'
+      #     as: key_value
+      #     on:
+      #       - equal: ['value', '{{key_value}}']
+      #       - store: [global, '{{key_value}}']
     - name: Echo example 2 (POST)
       request: http://localhost:5555/post
       method: POST
@@ -52,6 +56,16 @@ pipeline:
             array: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
       capture:
         json: '$.request'
+    - name: Echo example 3 (POST, Json from file)
+      request: https://postman-echo.com/post
+      method: POST
+      headers:
+        Content-Type: application/json
+      vars:
+        in-json: test text
+        token: 43778f89af0267f02ab20d18
+      body:
+        uri: file://./resources/example_body.json
     - name: Local echo test
       request: http://localhost:65520/test
       method: POST
