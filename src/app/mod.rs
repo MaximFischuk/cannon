@@ -1,5 +1,6 @@
 use crate::configuration::manifest::BodyEntry;
 use crate::configuration::manifest::Manifest;
+use crate::configuration::manifest::{Capture, CaptureEntry};
 use hyper::body::to_bytes;
 use hyper::client::HttpConnector;
 use hyper::Client;
@@ -8,6 +9,7 @@ use hyper::{Body, Request};
 use hyper_tls::HttpsConnector;
 use liquid::Object;
 use liquid::Parser;
+use serde_json::Value;
 use std::fs;
 use std::time::Instant;
 
@@ -54,16 +56,38 @@ impl App {
             let now = Instant::now();
             match self.client.request(prepared).await {
                 Ok(mut response) => {
-                    let body = to_bytes(response.body_mut()).await;
+                    let body = to_bytes(response.body_mut()).await.unwrap();
                     info!(
                         "Received response {:#?} body {:#?} in {} ms",
                         response,
                         body,
                         now.elapsed().as_millis()
-                    )
+                    );
+                    self.capture_body(&body, &entry.capture);
                 }
                 Err(e) => error!("Failed to send request {}", e),
             }
+        }
+    }
+
+    fn capture_body(&self, body: &[u8], capture: &[CaptureEntry]) {
+        let body_string = match String::from_utf8(body.to_vec()) {
+            Ok(s) => s,
+            Err(e) => {
+                error!("Failed to parse body string: {}", e);
+                return;
+            }
+        };
+        for cap in capture {
+            let captured: Vec<Value> = match &cap.cap {
+                Capture::Json(selector) => {
+                    let data: Value = serde_json::from_str(&body_string)
+                        .expect("Cannot serialize object to json");
+                    selector.find(&data).cloned().collect()
+                }
+                Capture::Regex(_) => unimplemented!(),
+            };
+            info!("Find values {:#?}", captured);
         }
     }
 

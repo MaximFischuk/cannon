@@ -4,6 +4,7 @@ use hyper::http::uri::Uri;
 use hyper::Method;
 use jsonpath::Selector;
 use liquid::Object;
+use regex::Regex;
 use serde::export::fmt::Debug;
 use serde_derive::Deserialize;
 use serde_json::Value;
@@ -41,6 +42,12 @@ pub enum BodyEntry {
     Base64(#[serde(with = "crate::configuration::deserialize::base64_property")] Vec<u8>),
 }
 
+#[derive(Debug, Deserialize)]
+pub struct Resource {
+    #[serde(with = "crate::configuration::deserialize::uri")]
+    pub uri: Uri,
+}
+
 #[derive(Deserialize, Derivative)]
 #[serde(rename_all = "lowercase")]
 #[derivative(Debug)]
@@ -50,6 +57,30 @@ pub enum Capture {
         #[serde(with = "crate::configuration::deserialize::selector")]
         Selector,
     ),
+    Regex(#[serde(with = "serde_regex")] Regex),
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum AssertFunction {
+    Equal(String, String, #[serde(default)] Option<String>),
+    NotEqual(String, String, #[serde(default)] Option<String>),
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Functor {
+    Assert(AssertFunction),
+    Matches(#[serde(with = "serde_regex")] Regex),
+}
+
+#[derive(Debug, Deserialize)]
+pub struct CaptureEntry {
+    #[serde(flatten)]
+    pub cap: Capture,
+    #[serde(rename = "as")]
+    pub variable: String,
+    pub on: Vec<Functor>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -58,6 +89,8 @@ pub struct Manifest {
     #[serde(with = "crate::configuration::deserialize::uri")]
     pub collect: Uri,
     pub pipeline: Pipeline,
+    #[serde(default)]
+    pub vars: Object,
 }
 
 #[derive(Debug, Deserialize)]
@@ -81,7 +114,8 @@ pub struct PipelineEntry {
     pub headers: HashMap<String, String>,
     #[serde(default)]
     pub vars: Object,
-    pub capture: Option<Capture>,
+    #[serde(default)]
+    pub capture: Vec<CaptureEntry>,
     // pub vars: HashMap<String, VarEntry>,
 }
 
