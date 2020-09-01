@@ -5,6 +5,9 @@ disqus: hackmd
 
 Cannon
 ===
+
+
+[![hackmd-github-sync-badge](https://hackmd.io/-kUY4A_aRK2vjcIysurGCQ/badge)](https://hackmd.io/-kUY4A_aRK2vjcIysurGCQ)
 <!-- ![Downloads](https://img.shields.io/github/downloads/atom/atom/total.svg) -->
 ![Build](https://travis-ci.com/MaximFischuk/cannon.svg?branch=master)
 ![Tests](https://github.com/MaximFischuk/cannon/workflows/Tests/badge.svg)
