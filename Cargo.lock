@@ -160,6 +160,7 @@ dependencies = [
  "hyper",
  "hyper-tls",
  "jsonpath",
+ "kstring",
  "liquid",
  "log",
  "regex",

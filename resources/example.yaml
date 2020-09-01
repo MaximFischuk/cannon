@@ -2,6 +2,8 @@ name: Example
 collect: mongodb://root:test123@localhost:27017
 resources:
   - uri: file://./resources/user_credentials.csv
+vars:
+  in-json: test text
 pipeline:
   test:
     - name: Echo example
@@ -34,19 +36,30 @@ pipeline:
           {
             "test": "test",
             "test1": {
-              "key": "value",
+              "key": "test text",
               "template": "{{in-json | capitalize}}",
               "array": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
             }
           }
       capture:
-        - json: '$.data.test1.array'
+        - json: '$.data.test1.key'
           as: key_value
           on:
-            - assert: 
-                equal: ['{{some_variable}}', '{{key_value}}']
-            - assert: 
-                notequal: ['{{some_variable}}', '{{key_value}}', 'Some message']
+            - assert:
+                equal:
+                  var: token
+            - assert:
+                equal:
+                  value: 'value'
+                message: 'Value must equal to "value"'
+            - assert:
+                message: 'Value must be equal to in-json variable'
+                equal:
+                  var: 'in-json'
+            - assert:
+                notequal:
+                  value: 2
+                message: Value must not be equal to 2
     - name: Echo example 2 (POST)
       request: http://localhost:5555/post
       method: POST

@@ -62,15 +62,28 @@ pub enum Capture {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "lowercase")]
+pub enum AssertParamValueVar {
+    Value(liquid::model::Value),
+    Var(String),
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum AssertFunction {
-    Equal(String, String, #[serde(default)] Option<String>),
-    NotEqual(String, String, #[serde(default)] Option<String>),
+    Equal(AssertParamValueVar),
+    NotEqual(AssertParamValueVar),
 }
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Functor {
-    Assert(AssertFunction),
+    Assert {
+        #[serde(flatten)]
+        function: AssertFunction,
+
+        #[serde(default)]
+        message: Option<String>,
+    },
     Matches(#[serde(with = "serde_regex")] Regex),
 }
 
@@ -83,7 +96,7 @@ pub struct CaptureEntry {
     pub on: Vec<Functor>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Default)]
 pub struct Manifest {
     pub name: String,
     #[serde(with = "crate::configuration::deserialize::uri")]
@@ -93,7 +106,7 @@ pub struct Manifest {
     pub vars: Object,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Default)]
 pub struct Pipeline {
     pub before_all: Option<Code>,
     pub after_all: Option<Code>,
