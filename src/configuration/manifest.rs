@@ -1,3 +1,4 @@
+use bytes::Bytes;
 use config::{Config, ConfigError, File};
 use derivative::*;
 use hyper::http::uri::Uri;
@@ -9,7 +10,7 @@ use serde::export::fmt::Debug;
 use serde_derive::Deserialize;
 use serde_json::Value;
 use std::collections::HashMap;
-use std::convert::TryFrom;
+use std::fs;
 use std::path::PathBuf;
 
 #[derive(Debug, Deserialize)]
@@ -33,7 +34,7 @@ pub enum VarEntry {
     Array(Vec<String>),
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "lowercase")]
 pub enum BodyEntry {
     Raw(String),
@@ -113,6 +114,7 @@ pub struct Pipeline {
     pub test: Vec<PipelineEntry>,
 }
 
+// TODO: make unified or variant pipeline entry to support multiple client providers
 #[derive(Debug, Deserialize)]
 pub struct PipelineEntry {
     pub before: Option<Code>,
@@ -143,14 +145,33 @@ impl Manifest {
     }
 }
 
-impl PipelineEntry {
-    pub fn generate_request_uri(&self) -> Uri {
-        let uri_string: String = self.request.clone();
-        let template = liquid::ParserBuilder::with_stdlib()
-            .build()
-            .unwrap()
-            .parse(uri_string.as_str())
-            .unwrap();
-        Uri::try_from(&template.render(&self.vars).unwrap()).unwrap()
+impl Into<Bytes> for BodyEntry {
+    fn into(self) -> Bytes {
+        match self {
+            BodyEntry::Raw(body) => Bytes::from(body.to_owned()),
+            BodyEntry::Json(body) => Bytes::from(serde_json::to_vec(&body).unwrap()),
+            BodyEntry::Uri(body) => Bytes::from(read_uri(&body).unwrap()),
+            BodyEntry::Base64(body) => Bytes::from(base64::decode(body).unwrap()),
+        }
     }
+}
+
+fn read_uri(uri: &Uri) -> Option<Vec<u8>> {
+    if let Some(scheme) = uri.scheme_str() {
+        return match scheme {
+            "file" => match fs::read(format!("{}{}", uri.authority().unwrap(), uri.path())) {
+                Ok(file_data) => Some(file_data),
+                Err(e) => {
+                    error!(
+                        "Failed to load file content from {} cause {}",
+                        uri.path(),
+                        e
+                    );
+                    None
+                }
+            },
+            _ => None,
+        };
+    }
+    None
 }

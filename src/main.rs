@@ -7,11 +7,13 @@
 // #![deny(dead_code)]
 // #![deny(unused_imports)]
 //#![deny(missing_docs)]
+//#![deny(warnings)]
 
 extern crate chrono;
 extern crate derivative;
 extern crate hyper;
 extern crate serde_derive;
+extern crate uuid;
 
 #[macro_use]
 extern crate log;
