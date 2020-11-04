@@ -84,6 +84,6 @@ pipeline:
     - name: Local echo test
       request: http://localhost:65520/test
       method: POST
-    - name: Non-standatd method
+    - name: Non-standard method
       request: http://localhost:5555/test
       method: LIST
