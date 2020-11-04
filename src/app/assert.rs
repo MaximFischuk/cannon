@@ -83,9 +83,10 @@ mod test {
 
     #[test]
     fn test_value_not_equals_to_variable() {
-        let value = CaptureValue::Scalar(liquid::model::scalar::Scalar::new(42));
+        let expected = CaptureValue::Scalar(liquid::model::scalar::Scalar::new(42));
         let assert_function = AssertFunction::NotEqual(AssertParamValueVar::Var("expect".into()));
-        let result = assert_value(&Context::with_vars(vec![("expect".into(), value.clone())]), &value, &assert_function);
+        let value = CaptureValue::Scalar(liquid::model::scalar::Scalar::new(43));
+        let result = assert_value(&Context::with_vars(vec![("expect".into(), expected.clone())]), &value, &assert_function);
 
         assert!(result);
     }
