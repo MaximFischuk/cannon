@@ -5,10 +5,10 @@ pub(crate) mod hooks;
 pub(crate) mod assert;
 pub(crate) mod job;
 
+use std::thread::sleep;
+use crate::app::executor::RunInfo;
 use crate::app::job::HttpJob;
-use crate::configuration::manifest::CaptureEntry;
 use crate::app::executor::JobGroup;
-use std::collections::HashMap;
 use std::time::Instant;
 use crate::app::capture::Capturable;
 use crate::app::capture::CaptureValue;
@@ -37,7 +37,6 @@ impl SendMessage<Request<Body>, ResponseFuture> for Client<HttpsConnector<HttpCo
 pub struct App {
     name: String,
     jobs_group: JobGroup<HttpJob>,
-    captures: HashMap<uuid::Uuid, Vec<CaptureEntry>>,
     client: Client<HttpsConnector<HttpConnector>>,
     context: Arc<Mutex<Context>>,
 }
@@ -47,18 +46,14 @@ impl App {
         let client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
         let mut context = Context::with_vars(manifest.vars);
         let mut http_jobs = vec![];
-        let mut captures = HashMap::new();
         for entry in manifest.pipeline.test {
             let job = HttpJob::from(&entry);
-            if !entry.capture.is_empty() {
-                captures.insert(job.get_uuid(), entry.capture);
-            }
+            let info = RunInfo::new(entry.repeats, entry.delay, entry.capture);
             context.push_contextual_vars(entry.vars, job.get_uuid());
-            http_jobs.push(Box::new(job));
+            http_jobs.push((job, info));
         }
         App {
             client,
-            captures,
             name: manifest.name,
             jobs_group: JobGroup::new(String::default(), http_jobs),
             context: Arc::new(Mutex::new(context)),
@@ -68,22 +63,22 @@ impl App {
     pub async fn run(&self) {
         info!("Starting pipeline '{}'", self.name);
         info!("Registered {} jobs", self.jobs_group.amount());
-        for job in self.jobs_group.iter() {
+        for (job, info) in self.jobs_group.iter() {
             let mut lock = match self.context.lock() {
                 Ok(lock) => lock,
                 Err(e) => panic!("{:#?}", e),
             };
             let locked_context = lock.deref_mut();
             let local_context = &mut locked_context.make_contextual(job.get_uuid());
-            // job.before(locked_context);
-            let now = Instant::now();
-            let result = job.execute(local_context, &self.client);
-            info!("Elapsed for execution of test({}), {:?} ms", job.get_uuid(), now.elapsed().as_millis());
-            match result {
-                Ok(body) => {
-                    let captures = self.captures.get(&job.get_uuid());
-                    if let Some(cap) = captures {
-                        for entry in cap {
+            for _ in 0..info.repeats {
+                sleep(info.delay);
+                // job.before(locked_context);
+                let now = Instant::now();
+                let result = job.execute(local_context, &self.client);
+                info!("Elapsed for execution of test({}), {:?} ms", job.get_uuid(), now.elapsed().as_millis());
+                match result {
+                    Ok(body) => {
+                        for entry in &info.captures {
                             let mut assert_result: bool = true;
                             let value = entry.cap.capture(local_context, &body);
                             for functor in &entry.on {
@@ -94,9 +89,9 @@ impl App {
                                 locked_context.push_vars(once((entry.variable.clone().into(), value)));
                             }
                         }
-                    }
-                },
-                Err(e) => error!("{:#?}", e)
+                    },
+                    Err(e) => error!("{:#?}", e)
+                }
             }
             // job.after(locked_context);
             drop(lock);

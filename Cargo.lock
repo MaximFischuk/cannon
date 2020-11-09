@@ -168,6 +168,7 @@ dependencies = [
  "hyper-tls",
  "jsonpath",
  "kstring",
+ "lazy_static",
  "liquid",
  "log",
  "regex",

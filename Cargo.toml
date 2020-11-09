@@ -35,3 +35,4 @@ sxd-xpath = "0.4.2"
 kstring = "1.0.0"
 uuid = { version = "0.8", features = ["serde", "v4"] }
 bytes = "0.6.0"
+lazy_static = "1.4.0"

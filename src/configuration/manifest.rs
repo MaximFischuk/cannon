@@ -1,3 +1,4 @@
+use std::time::Duration;
 use bytes::Bytes;
 use config::{Config, ConfigError, File};
 use derivative::*;
@@ -131,6 +132,11 @@ pub struct PipelineEntry {
     pub vars: Object,
     #[serde(default)]
     pub capture: Vec<CaptureEntry>,
+    #[serde(with = "crate::configuration::deserialize::duration")]
+    #[serde(default)]
+    pub delay: Duration,
+    #[serde(default = "default_repeats")]
+    pub repeats: u64,
     // pub vars: HashMap<String, VarEntry>,
 }
 
@@ -174,4 +180,8 @@ fn read_uri(uri: &Uri) -> Option<Vec<u8>> {
         };
     }
     None
+}
+
+fn default_repeats() -> u64 {
+    1
 }

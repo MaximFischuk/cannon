@@ -46,3 +46,27 @@ pub mod base64_property {
         String::deserialize(deserializer).map(|v| base64::decode(v).unwrap())
     }
 }
+
+pub mod duration {
+    use std::time::{Duration};
+    use serde::{Deserialize, Deserializer};
+    use serde::de::Error;
+    use crate::time::timeunit::{DurationUnit};
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Duration, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        match String::deserialize(deserializer) {
+            Ok(v) => {
+                let value = match v.as_str().parse::<DurationUnit>() {
+                    Ok(value) => value.into(),
+                    Err(err) => return Err(D::Error::custom(err.to_string())),
+                };
+                Ok(value)
+            },
+            Err(err) => Err(err)
+        }
+    }
+
+}

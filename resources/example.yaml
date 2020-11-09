@@ -9,6 +9,8 @@ pipeline:
     - name: Echo example
       request: https://postman-echo.com/get?a={{a}}&b[0]={{b}}&b[1]={{bc}}
       method: GET
+      repeats: 5
+      delay: 2s
       vars:
         path1: world
         a: hello
@@ -74,6 +76,7 @@ pipeline:
     - name: Echo example 3 (POST, Json from file)
       request: https://postman-echo.com/post
       method: POST
+      delay: 300ms
       headers:
         Content-Type: application/json
       vars:

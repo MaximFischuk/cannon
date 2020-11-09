@@ -1,18 +1,37 @@
+use crate::configuration::manifest::CaptureEntry;
 use core::slice::Iter;
 use crate::app::context::Context;
 use crate::app::hooks::Executable;
 use crate::app::hooks::ExecutionResult;
 use bytes::Bytes;
-use chrono::Duration;
+use std::time::Duration;
 use hyper::StatusCode;
 
 pub(crate) struct JobGroup<T> {
     name: String,
-    jobs: Vec<Box<T>>,
+    jobs: Vec<(T, RunInfo)>,
+}
+
+pub(crate) struct RunInfo {
+    pub repeats: u64,
+    pub delay: Duration,
+    pub captures: Vec<CaptureEntry>
+}
+
+impl RunInfo {
+
+    pub fn new(repeats: u64, delay: Duration, captures: Vec<CaptureEntry>) -> Self {
+        Self {
+            repeats,
+            delay,
+            captures
+        }
+    }
+
 }
 
 impl <T> JobGroup<T> {
-    pub fn new(name: String, jobs: Vec<Box<T>>) -> Self {
+    pub fn new(name: String, jobs: Vec<(T, RunInfo)>) -> Self {
         Self {
             name,
             jobs
@@ -20,7 +39,7 @@ impl <T> JobGroup<T> {
     }
 
     #[inline]
-    pub fn iter(&self) -> Iter<'_, Box<T>> {
+    pub fn iter(&self) -> Iter<'_, (T, RunInfo)> {
         self.jobs.iter()
     }
 

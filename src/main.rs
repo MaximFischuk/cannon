@@ -14,12 +14,14 @@ extern crate derivative;
 extern crate hyper;
 extern crate serde_derive;
 extern crate uuid;
+extern crate lazy_static;
 
 #[macro_use]
 extern crate log;
 
 mod app;
 mod configuration;
+mod time;
 
 use log::LevelFilter;
 use signal_hook::{iterator::Signals, SIGINT};
