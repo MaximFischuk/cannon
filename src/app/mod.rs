@@ -24,7 +24,6 @@ use hyper::Client;
 use hyper::Request;
 use hyper_tls::HttpsConnector;
 use std::ops::DerefMut;
-use std::sync::Arc;
 use std::sync::Mutex;
 use std::iter::once;
 
@@ -38,7 +37,7 @@ pub struct App {
     name: String,
     jobs_group: JobGroup<HttpJob>,
     client: Client<HttpsConnector<HttpConnector>>,
-    context: Arc<Mutex<Context>>,
+    context: Mutex<Context>,
 }
 
 impl App {
@@ -56,7 +55,7 @@ impl App {
             client,
             name: manifest.name,
             jobs_group: JobGroup::new(String::default(), http_jobs),
-            context: Arc::new(Mutex::new(context)),
+            context: Mutex::new(context),
         }
     }
 
