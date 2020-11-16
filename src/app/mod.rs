@@ -68,7 +68,7 @@ impl App {
                 Err(e) => panic!("{:#?}", e),
             };
             let locked_context = lock.deref_mut();
-            let local_context = &mut locked_context.make_contextual(job.get_uuid());
+            let local_context = &mut locked_context.isolated(job.get_uuid());
             for _ in 0..info.repeats {
                 sleep(info.delay);
                 // job.before(locked_context);

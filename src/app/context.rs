@@ -76,10 +76,14 @@ impl Context {
         self.globals.get(&k).map(Clone::clone)
     }
 
-    pub fn make_contextual(&self, local_id: uuid::Uuid) -> Self {
+    pub fn isolated(&self, local_id: uuid::Uuid) -> Self {
         let mut contextual_vars = self.globals.clone();
         let key: KString = local_id.to_simple().to_string().into();
-        contextual_vars.extend(self.contextual.get(&key).unwrap().clone().into_object().unwrap());
+        let local = match self.contextual.get(&key) {
+            Some(value) => value.clone().into_object().unwrap(),
+            None => panic!("Local {} not found", local_id),
+        };
+        contextual_vars.extend(local);
         Self {
             globals: contextual_vars,
             contextual: Object::default(),
