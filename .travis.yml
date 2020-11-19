@@ -1,17 +1,47 @@
+dist: bionic
 language: rust
-os:
-  - linux
-  - osx
-rust:
-  - stable
-cache: cargo
+services: docker
+sudo: required
+env:
+  global:
+  - CRATE_NAME=cannon
+matrix:
+  include:
+  - env: TARGET=arm-unknown-linux-gnueabi DISABLE_TESTS=1
+  - env: TARGET=armv7-unknown-linux-gnueabihf DISABLE_TESTS=1
+  - env: TARGET=x86_64-unknown-linux-gnu
+  - env: TARGET=x86_64-unknown-linux-musl
+  - env: TARGET=x86_64-apple-darwin
+    os: osx
+before_install:
+- set -e
+- rustup self update
+- export PATH="$PATH:$HOME/.cargo/bin"
+install:
+- sh ci/install.sh
+- source ~/.cargo/env || true
 script:
-  - cargo build --verbose --all --release
-  - cargo test --verbose --all --release
+- bash ci/script.sh
+after_script: set +e
+before_deploy:
+- sh ci/before_deploy.sh
 deploy:
-  provider: bintray
-  file: "./deploy/descriptor.json"
-  user: maximfischuk
+  api_key:
+    secure: T1K9ho5G6zj/64YO+t6TKcBPge/obMabuyv781XwPPPpFeBrNxFU4m80ALwuVi85qKbbXaGgQfAHGUnphf3OCAeLZIJJNGK6zrafIhnazSmM/mDyezbS7s8WblMZgId71UV2Vw6DISqYVVFzyWFJ98uty7XoOIeaJIduf1uBA0ZVVJmzO5qUdwo6FDjlT0OavzUQYSbK+ak4xlknQqroXCCH8XZTJlrtMA831fWSYPd/6pLQiqUJzppCgOIcug2B6LA/MdjdBCu6tGvn30+ZoUS7jm//1S5hLmZpwZ+KdPX1cG/MCyX7F13g1H5Hu9YSTHNeAQOhiV3IdHwxL9mqXZiAj04ttMsLMDc1/eRqxpuw/s1A0rZ4thXGQaWKXRRIKue8ktrX2YdTMDiUgm3MsAGV1gBYmcV1Ugy58/L/pKaw96Auec4tK2QZQONykeU7DuV9X2iG6GN7k110Nxbm27bA+51Yf+ZIg/dDkBdUYuiZyAkMhzmu7EcS13i6Wioxh38gjoyTM1QQwq8btP4McELYyyHs7Y0XB+pILu1UzECxlLv7F94fS3FXRPO5aF0i+RKjle8TmnZuPqYuG1hijiupq4p+7KyCyruSjjCd5DJ8dmA/pCxYgw9IvpnRX/d5i6+SmUrxO8+3ZfMddCLZsyEb5ZmsoZ0p+bi6/LBMxlo=
+  file_glob: true
+  file: "${CRATE_NAME}-${TRAVIS_TAG}-${TARGET}.*"
+  on:
+    condition: "$TRAVIS_RUST_VERSION = stable"
+    tags: true
+  provider: releases
   skip_cleanup: true
-  key:
-    secure: aQ3gBLbz4iF9zCFndgwR6yc2+Ui6HsiV6pyM35j/w1oz/PQZO02Y8fDCfPvZMa5LlyheoM40W8ZzlAw0XHXoVw66IoymDD+Bobvrt16E46rVjfCeRr+91z3XaLqU4aeCoJdVU/4j73W+6ftAgI9PkQjhTC4IuVWvh15z1wzRhoKhgGJUa/MWltS2MsGym8zx7em0/4S2494vVBk6SK2o08ibjIlU4UAYj5Y4SaRMNEfiqLuAi2I+Ke1MYZpEi2dmjEnMdwsB/loBPnfLoa9kt1k/Qq2oWFArzrRLq2tX8ngDXCbIshssNIfqfoC9xXP14zfkXL0t4CIznqE8BDQcvJj9vaSY5M5Tavzm1EGE9lbzNvPyPmPRLpA2mdjMsOlmcvJCGCwcixX8s8KWOJpEnLoDG4uI9CWa1FZmVs5G0N4+5itLdmwd9aaqf0PNfPcmSwclQBBmtXzcrUVmWj5l4PCpeBfStZgMzZ75xGI4QmhVrFMrYJJ/cuhIMKvvrdYKzrjPNF7RYCtnmymkD2IeGUqE1VMW+htFfXV6hHoXW+RjtnyfPwDeE60ytWne4EKspuW55wePnlPqiGMQ2deJfDeBbBB9DOEC9Vs86ZI+XhBfFqsb6XjsGIWO9DFqs0EixHsnO5AhM2AEQZFWbIKGr6PjzIz02fdJABR10CQfjdc=
+cache: cargo
+before_cache:
+- chmod -R a+r $HOME/.cargo
+branches:
+  only:
+  - "/^v\\d+\\.\\d+\\.\\d+.*$/"
+  - master
+notifications:
+  email:
+    on_success: never
