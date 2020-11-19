@@ -1,6 +1,7 @@
 pub(crate) mod assert;
 pub(crate) mod capture;
 pub(crate) mod context;
+pub(crate) mod error;
 pub(crate) mod executor;
 pub(crate) mod hooks;
 pub(crate) mod job;
@@ -21,6 +22,7 @@ use http::Response as HttpResponse;
 use liquid::Object;
 use reqwest::blocking::Client;
 use reqwest::blocking::Request;
+use reqwest::Error as RequestError;
 use std::convert::TryFrom;
 use std::sync::{Arc, Mutex};
 use std::thread::sleep;
@@ -36,13 +38,13 @@ macro_rules! lock {
     };
 }
 
-impl SendMessage<HttpRequest<Vec<u8>>, HttpResponse<Bytes>> for Client {
-    fn send(&self, data: HttpRequest<Vec<u8>>) -> HttpResponse<Bytes> {
-        let req: Request = Request::try_from(data).unwrap();
-        let response = self.execute(req).unwrap();
-        HttpResponse::builder()
+impl SendMessage<HttpRequest<Vec<u8>>, Result<HttpResponse<Bytes>, RequestError>> for Client {
+    fn send(&self, data: HttpRequest<Vec<u8>>) -> Result<HttpResponse<Bytes>, RequestError> {
+        let req: Request = Request::try_from(data)?;
+        let response = self.execute(req)?;
+        Ok(HttpResponse::builder()
             .body(Bytes::from(response.bytes().unwrap().to_vec()))
-            .unwrap()
+            .unwrap())
     }
 }
 

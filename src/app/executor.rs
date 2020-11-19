@@ -1,5 +1,6 @@
 use crate::app::capture::CaptureValue;
 use crate::app::context::Context;
+use crate::app::error::Error;
 use crate::app::hooks::Executable;
 use crate::app::hooks::ExecutionResult;
 use crate::configuration::manifest::CaptureEntry;
@@ -107,7 +108,7 @@ pub trait JobExecutionHooks<T, R> {
         &self,
         context: &mut Context,
         sender: &impl SendMessage<T, R>,
-    ) -> Result<ExecutionResponse, String>;
+    ) -> Result<ExecutionResponse, Error>;
 }
 
 pub enum ExecutionCode {

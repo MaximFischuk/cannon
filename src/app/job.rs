@@ -1,3 +1,4 @@
+use crate::app::error::Error as ExecutionError;
 use crate::app::executor::ExecutionResponse;
 use crate::app::Context;
 use crate::app::GetUuid;
@@ -8,6 +9,7 @@ use bytes::Buf as BytesBuf;
 use bytes::Bytes;
 use http::Request as HttpRequest;
 use http::Response as HttpResponse;
+use reqwest::Error;
 use reqwest::Method;
 use std::collections::HashMap;
 use std::time::Instant;
@@ -40,7 +42,7 @@ impl From<&PipelineEntry> for HttpJob {
     }
 }
 
-impl JobExecutionHooks<HttpRequest<Vec<u8>>, HttpResponse<Bytes>> for HttpJob {
+impl JobExecutionHooks<HttpRequest<Vec<u8>>, Result<HttpResponse<Bytes>, Error>> for HttpJob {
     fn before(&self, _context: &mut Context) -> Result<String, String> {
         todo!()
     }
@@ -50,8 +52,8 @@ impl JobExecutionHooks<HttpRequest<Vec<u8>>, HttpResponse<Bytes>> for HttpJob {
     fn execute(
         &self,
         context: &mut Context,
-        sender: &impl SendMessage<HttpRequest<Vec<u8>>, HttpResponse<Bytes>>,
-    ) -> Result<ExecutionResponse, String> {
+        sender: &impl SendMessage<HttpRequest<Vec<u8>>, Result<HttpResponse<Bytes>, Error>>,
+    ) -> Result<ExecutionResponse, ExecutionError> {
         let mut request = HttpRequest::builder()
             .uri(context.apply(&self.request))
             .method(&self.method);
@@ -69,23 +71,21 @@ impl JobExecutionHooks<HttpRequest<Vec<u8>>, HttpResponse<Bytes>> for HttpJob {
             prepared = request.body(Vec::default()).expect("Cannot create request");
         }
         let now = Instant::now();
-        let response = sender.send(prepared);
-        // match sender.send(prepared) {
-        //     Ok(response) => {
-        //         // let body = to_bytes(response.body_mut()).await.unwrap();
-        //         debug!(
-        //             "Received response {:#?} body {:#?} in {} ms",
-        //             response,
-        //             body,
-        //             now.elapsed().as_millis()
-        //         );
-        //         Ok(Bytes::copy_from_slice(body.bytes()))
-        //     }
-        //     Err(e) => {
-        //         error!("Failed to send request {}", e);
-        //         Err(format!("{}", e))
-        //     },
-        // };
-        Ok(ExecutionResponse::from(response.body().clone()))
+        match sender.send(prepared) {
+            Ok(response) => {
+                let body = response.body();
+                debug!(
+                    "Received response {:#?} body {:#?} in {} ms",
+                    response,
+                    body,
+                    now.elapsed().as_millis()
+                );
+                Ok(ExecutionResponse::from(response.body().clone()))
+            }
+            Err(e) => {
+                error!("Failed to send request {}", e);
+                Err(ExecutionError::Connection(format!("{}", e)))
+            }
+        }
     }
 }

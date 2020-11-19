@@ -19,9 +19,12 @@ extern crate uuid;
 #[macro_use]
 extern crate log;
 
+#[macro_use]
+extern crate derive_builder;
+
 mod app;
 mod configuration;
-mod reporter;
+// mod reporter;
 mod time;
 
 use log::LevelFilter;
