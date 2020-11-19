@@ -6,7 +6,7 @@ use std::iter::repeat;
 pub enum Error {
     /// A syntax error.
     Syntax(String),
-    
+
     UnitNotSupported(String),
     /// Hints that destructuring should not be exhaustive.
     ///
@@ -63,9 +63,7 @@ impl fmt::Debug for Error {
                 write!(f, ")")?;
                 Ok(())
             }
-            Error::__Nonexhaustive => {
-                f.debug_tuple("__Nonexhaustive").finish()
-            }
+            Error::__Nonexhaustive => f.debug_tuple("__Nonexhaustive").finish(),
         }
     }
 }

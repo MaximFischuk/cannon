@@ -1,7 +1,7 @@
-use core::str::FromStr;
-use regex::Regex;
-use lazy_static::*;
 use crate::time::error::Error;
+use core::str::FromStr;
+use lazy_static::*;
+use regex::Regex;
 use std::time::Duration;
 
 lazy_static! {
@@ -9,7 +9,7 @@ lazy_static! {
     //     r"^(?=\d+[ywdhms])(( ?\d+y)?(?!\d))?(( ?\d+w)?(?!\d))?(( ?\d+d)?(?!\d))?(( ?\d+h)?(?!\d))?(( ?\d+m)?(?!\d))?(( ?\d+s)?(?!\d))?( ?\d+ms)?$"
     // )
     // .expect("Regex compilation error");
-    
+
     static ref DURATION_REGEX: Regex = Regex::new(
         r"^(?P<value>\d+)(?P<unit>ns|us|ms|s|m|h|d){1}$"
     )
@@ -43,14 +43,14 @@ impl FromStr for DurationUnit {
             let unit = time_unit.parse::<TimeUnit>()?;
             Ok(Self { value, unit })
         } else {
-            Err(Error::Syntax("Current string is not correct duration unit value".to_owned()))
+            Err(Error::Syntax(
+                "Current string is not correct duration unit value".to_owned(),
+            ))
         }
     }
-
 }
 
 impl Into<Duration> for DurationUnit {
-    
     fn into(self) -> Duration {
         match self.unit {
             TimeUnit::Nanosecond => Duration::from_nanos(self.value),
@@ -76,17 +76,19 @@ impl FromStr for TimeUnit {
             "m" | "minute" | "mins" | "minutes" => Ok(TimeUnit::Minute),
             "h" | "hour" | "hours" => Ok(TimeUnit::Hour),
             "d" | "day" | "days" => Ok(TimeUnit::Day),
-            _ => Err(Error::UnitNotSupported(format!("Unit '{}' not supported", s)))
+            _ => Err(Error::UnitNotSupported(format!(
+                "Unit '{}' not supported",
+                s
+            ))),
         }
     }
-
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::time::timeunit::DurationUnit;
+    use crate::time::timeunit::TimeUnit;
     use std::time::Duration;
-use crate::time::timeunit::DurationUnit;
-use crate::time::timeunit::TimeUnit;
 
     #[test]
     fn test_building_time_unit_from_string() {

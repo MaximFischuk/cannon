@@ -1,17 +1,17 @@
-use std::sync::Arc;
 use crate::app::CaptureValue;
+use derivative::*;
 use kstring::KString;
 use liquid::Object;
 use liquid::Parser;
 use std::iter::FromIterator;
-use derivative::*;
+use std::sync::Arc;
 
 #[derive(Derivative)]
 #[derivative(Debug)]
 pub struct Context {
     globals: Object,
     contextual: Object,
-    #[derivative(Debug="ignore")]
+    #[derivative(Debug = "ignore")]
     parser: Arc<Parser>,
 }
 
@@ -23,7 +23,6 @@ pub struct Report {
 }
 
 impl Context {
-
     pub fn new() -> Self {
         Self {
             globals: Object::default(),
@@ -53,7 +52,7 @@ impl Context {
 
     pub fn push_contextual_vars<T>(&mut self, iter: T, local_id: uuid::Uuid)
     where
-        T: IntoIterator<Item = (KString, CaptureValue)>
+        T: IntoIterator<Item = (KString, CaptureValue)>,
     {
         let object = Object::from_iter(iter);
         let key = local_id.to_simple().to_string().into();
@@ -87,7 +86,7 @@ impl Context {
         Self {
             globals: contextual_vars,
             contextual: Object::default(),
-            parser: self.parser.clone()
+            parser: self.parser.clone(),
         }
     }
 }
@@ -95,9 +94,9 @@ impl Context {
 #[cfg(test)]
 mod test {
 
-    use crate::app::Context;
     use crate::app::CaptureValue;
-    
+    use crate::app::Context;
+
     #[test]
     fn test_apply_template() {
         let value = CaptureValue::Scalar(liquid::model::scalar::Scalar::new(42));
@@ -107,5 +106,4 @@ mod test {
 
         assert_eq!(result, "42".to_owned());
     }
-
 }

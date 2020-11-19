@@ -1,5 +1,5 @@
-use crate::configuration::manifest::AssertParamValueVar;
 use crate::app::context::Context;
+use crate::configuration::manifest::AssertParamValueVar;
 use crate::configuration::manifest::Capture;
 use crate::configuration::manifest::CaptureEntry;
 use bytes::Bytes;
@@ -95,8 +95,8 @@ impl Capturable<Bytes> for Capture {
         };
         let value = match self {
             Capture::Json(selector) => {
-                let data: Value = serde_json::from_str(&body_string)
-                    .expect("Cannot serialize object to json");
+                let data: Value =
+                    serde_json::from_str(&body_string).expect("Cannot serialize object to json");
                 let captured: Vec<Value> = selector.find(&data).cloned().collect();
                 captured.into_liquid()
             }
@@ -112,8 +112,8 @@ impl Capturable<String> for Capture {
     fn capture(&self, _ctx: &mut Context, data: &String) -> CaptureValue {
         let value = match self {
             Capture::Json(selector) => {
-                let data: Value = serde_json::from_str(data)
-                    .expect("Cannot serialize object to json");
+                let data: Value =
+                    serde_json::from_str(data).expect("Cannot serialize object to json");
                 let captured: Vec<Value> = selector.find(&data).cloned().collect();
                 if captured.len() == 1 {
                     captured[0].into_liquid()
@@ -132,16 +132,13 @@ impl Capturable<String> for Capture {
 }
 
 impl Resolvable for AssertParamValueVar {
-    
     fn resolve(&self, ctx: &Context) -> Result<CaptureValue, String> {
         match self {
             AssertParamValueVar::Value(object) => Ok(object.clone()),
-            AssertParamValueVar::Var(var_name) => {
-                match ctx.find(var_name) {
-                    Some(value) => Ok(value),
-                    None => Err("Value not found".to_owned()),
-                }
-            }
+            AssertParamValueVar::Var(var_name) => match ctx.find(var_name) {
+                Some(value) => Ok(value),
+                None => Err("Value not found".to_owned()),
+            },
         }
     }
 }
