@@ -1,18 +1,18 @@
-use std::time::Duration;
 use bytes::Bytes;
 use config::{Config, ConfigError, File};
 use derivative::*;
-use hyper::http::uri::Uri;
-use hyper::Method;
+use http::Uri;
 use jsonpath::Selector;
 use liquid::Object;
 use regex::Regex;
+use reqwest::Method;
 use serde::export::fmt::Debug;
 use serde_derive::Deserialize;
 use serde_json::Value;
 use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
+use std::time::Duration;
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "lowercase")]

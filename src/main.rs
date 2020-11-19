@@ -11,16 +11,17 @@
 
 extern crate chrono;
 extern crate derivative;
-extern crate hyper;
+extern crate lazy_static;
+extern crate reqwest;
 extern crate serde_derive;
 extern crate uuid;
-extern crate lazy_static;
 
 #[macro_use]
 extern crate log;
 
 mod app;
 mod configuration;
+mod reporter;
 mod time;
 
 use log::LevelFilter;
@@ -34,8 +35,7 @@ use self::{
     configuration::manifest::Manifest,
 };
 
-#[tokio::main]
-async fn main() {
+fn main() {
     let options = Opt::from_args();
     let signals = Signals::new(&[SIGINT]).unwrap();
 
@@ -57,7 +57,7 @@ async fn main() {
         Ok(manifest) => {
             debug!("Initiated configuration {:#?}", manifest);
             let app = App::new(manifest);
-            app.run().await;
+            app.run();
         }
         Err(e) => error!("Failed to load manifest file configuration {}", e),
     }

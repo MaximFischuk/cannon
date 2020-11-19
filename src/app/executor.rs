@@ -1,11 +1,12 @@
-use crate::configuration::manifest::CaptureEntry;
-use core::slice::Iter;
+use crate::app::capture::CaptureValue;
 use crate::app::context::Context;
 use crate::app::hooks::Executable;
 use crate::app::hooks::ExecutionResult;
+use crate::configuration::manifest::CaptureEntry;
 use bytes::Bytes;
+use core::slice::Iter;
+use reqwest::StatusCode;
 use std::time::Duration;
-use hyper::StatusCode;
 
 pub(crate) struct JobGroup<T> {
     name: String,
@@ -15,27 +16,27 @@ pub(crate) struct JobGroup<T> {
 pub(crate) struct RunInfo {
     pub repeats: u64,
     pub delay: Duration,
-    pub captures: Vec<CaptureEntry>
+    pub captures: Vec<CaptureEntry>,
+}
+
+pub struct ExecutionResponse {
+    body: Bytes,
+    additional: CaptureValue,
 }
 
 impl RunInfo {
-
     pub fn new(repeats: u64, delay: Duration, captures: Vec<CaptureEntry>) -> Self {
         Self {
             repeats,
             delay,
-            captures
+            captures,
         }
     }
-
 }
 
-impl <T> JobGroup<T> {
+impl<T> JobGroup<T> {
     pub fn new(name: String, jobs: Vec<(T, RunInfo)>) -> Self {
-        Self {
-            name,
-            jobs
-        }
+        Self { name, jobs }
     }
 
     #[inline]
@@ -49,7 +50,7 @@ impl <T> JobGroup<T> {
     }
 }
 
-impl <T> Executable for JobGroup<T> {
+impl<T> Executable for JobGroup<T> {
     fn before_all(&self, _context: &mut Context) -> ExecutionResult {
         todo!()
     }
@@ -71,6 +72,34 @@ impl <T> Executable for JobGroup<T> {
     }
 }
 
+impl ExecutionResponse {
+    pub fn new(body: Bytes, additional: CaptureValue) -> Self {
+        Self { body, additional }
+    }
+
+    pub fn body(&self) -> &Bytes {
+        &self.body
+    }
+}
+
+impl From<Bytes> for ExecutionResponse {
+    fn from(body: Bytes) -> Self {
+        Self {
+            body,
+            additional: CaptureValue::Nil,
+        }
+    }
+}
+
+impl From<CaptureValue> for ExecutionResponse {
+    fn from(additional: CaptureValue) -> Self {
+        Self {
+            body: Bytes::default(),
+            additional,
+        }
+    }
+}
+
 pub trait JobExecutionHooks<T, R> {
     fn before(&self, context: &mut Context) -> Result<String, String>;
     fn after(&self, context: &mut Context) -> Result<String, String>;
@@ -78,7 +107,7 @@ pub trait JobExecutionHooks<T, R> {
         &self,
         context: &mut Context,
         sender: &impl SendMessage<T, R>,
-    ) -> Result<Bytes, String>;
+    ) -> Result<ExecutionResponse, String>;
 }
 
 pub enum ExecutionCode {

@@ -11,7 +11,7 @@ pub mod selector {
 }
 
 pub mod uri {
-    use hyper::http::uri::Uri;
+    use http::Uri;
     use serde::{Deserialize, Deserializer};
     use std::str::FromStr;
 
@@ -24,7 +24,7 @@ pub mod uri {
 }
 
 pub mod http_method {
-    use hyper::Method;
+    use reqwest::Method;
     use serde::{Deserialize, Deserializer};
     use std::str::FromStr;
 
@@ -48,10 +48,10 @@ pub mod base64_property {
 }
 
 pub mod duration {
-    use std::time::{Duration};
-    use serde::{Deserialize, Deserializer};
+    use crate::time::timeunit::DurationUnit;
     use serde::de::Error;
-    use crate::time::timeunit::{DurationUnit};
+    use serde::{Deserialize, Deserializer};
+    use std::time::Duration;
 
     pub fn deserialize<'de, D>(deserializer: D) -> Result<Duration, D::Error>
     where
@@ -64,9 +64,8 @@ pub mod duration {
                     Err(err) => return Err(D::Error::custom(err.to_string())),
                 };
                 Ok(value)
-            },
-            Err(err) => Err(err)
+            }
+            Err(err) => Err(err),
         }
     }
-
 }
