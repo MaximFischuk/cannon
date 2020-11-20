@@ -36,6 +36,7 @@ pub(in crate::app) struct ContextPool {
 }
 
 impl ContextPool {
+    #[cfg(test)]
     pub fn new() -> Self {
         Self {
             globals: Object::default(),
@@ -79,6 +80,7 @@ impl ContextPool {
     }
 
     #[inline]
+    #[cfg(test)]
     pub fn default_context(&self) -> Context {
         self.new_context(uuid::Uuid::default())
     }
@@ -125,8 +127,8 @@ mod test {
     #[test]
     fn test_apply_template() {
         let value = CaptureValue::Scalar(liquid::model::scalar::Scalar::new(42));
-        let context = ContextPool::with_vars(vec![("expect".into(), value.clone())])
-            .new_context(uuid::Uuid::default());
+        let context =
+            ContextPool::with_vars(vec![("expect".into(), value.clone())]).default_context();
         let body = "{{expect}}".to_owned();
         let result = context.apply(&body);
 

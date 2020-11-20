@@ -13,18 +13,11 @@ use crate::app::context::Context;
 use crate::app::context::ContextPool;
 use crate::app::executor::JobGroup;
 use crate::app::executor::RunInfo;
-use crate::app::executor::SendMessage;
 use crate::app::executor::{GetUuid, JobExecutionHooks};
 use crate::app::job::HttpJob;
 use crate::configuration::manifest::Manifest;
-use bytes::Bytes;
-use http::Request as HttpRequest;
-use http::Response as HttpResponse;
 use liquid::Object;
 use reqwest::blocking::Client;
-use reqwest::blocking::Request;
-use reqwest::Error as RequestError;
-use std::convert::TryFrom;
 use std::convert::TryInto;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
@@ -39,16 +32,6 @@ macro_rules! lock {
             Err(e) => panic!("{:#?}", e),
         }
     };
-}
-
-impl SendMessage<HttpRequest<Vec<u8>>, Result<HttpResponse<Bytes>, RequestError>> for Client {
-    fn send(&self, data: HttpRequest<Vec<u8>>) -> Result<HttpResponse<Bytes>, RequestError> {
-        let req: Request = Request::try_from(data)?;
-        let response = self.execute(req)?;
-        Ok(HttpResponse::builder()
-            .body(Bytes::from(response.bytes().unwrap().to_vec()))
-            .unwrap())
-    }
 }
 
 pub struct App {

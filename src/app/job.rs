@@ -1,10 +1,11 @@
 use crate::app::error::Error as ExecutionError;
 use crate::app::executor::ExecutionResponse;
+use crate::app::CaptureValue;
 use crate::app::Context;
 use crate::app::GetUuid;
 use crate::app::JobExecutionHooks;
-use crate::app::SendMessage;
 use crate::configuration::manifest::PipelineEntry;
+use crate::connection::SendMessage;
 use bytes::Buf as BytesBuf;
 use bytes::Bytes;
 use http::Request as HttpRequest;
@@ -74,13 +75,19 @@ impl JobExecutionHooks<HttpRequest<Vec<u8>>, Result<HttpResponse<Bytes>, Error>>
         match sender.send(prepared) {
             Ok(response) => {
                 let body = response.body();
+                let elapsed = now.elapsed();
                 debug!(
                     "Received response {:#?} body {:#?} in {} ms",
                     response,
                     body,
-                    now.elapsed().as_millis()
+                    elapsed.as_millis()
                 );
-                Ok(ExecutionResponse::from(response.body().clone()))
+                let result = ExecutionResponse::builder()
+                    .body(response.body().clone())
+                    .execution_time(elapsed)
+                    .additional(CaptureValue::default())
+                    .build();
+                result.map_err(|e| ExecutionError::Internal(e))
             }
             Err(e) => {
                 error!("Failed to send request {}", e);

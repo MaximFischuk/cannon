@@ -8,6 +8,7 @@ pub enum Error {
     ValueNotFound(String),
     Connection(String),
     Syntax(String),
+    Internal(String),
     /// Hints that destructuring should not be exhaustive.
     ///
     /// This enum may grow additional variants, so this makes sure clients
@@ -25,6 +26,7 @@ impl std::error::Error for Error {
             Error::ValueNotFound(ref err) => err,
             Error::Connection(ref err) => err,
             Error::Syntax(ref err) => err,
+            Error::Internal(ref err) => err,
             Error::__Nonexhaustive => unreachable!(),
         }
     }
@@ -37,6 +39,7 @@ impl fmt::Display for Error {
             Error::ValueNotFound(ref err) => err.fmt(f),
             Error::Connection(ref err) => err.fmt(f),
             Error::Syntax(ref err) => err.fmt(f),
+            Error::Internal(ref err) => err.fmt(f),
             Error::__Nonexhaustive => unreachable!(),
         }
     }
@@ -77,6 +80,15 @@ impl fmt::Debug for Error {
                 Ok(())
             }
             Error::Syntax(ref err) => {
+                let hr: String = repeat('~').take(79).collect();
+                writeln!(f, "Syntax(")?;
+                writeln!(f, "{}", hr)?;
+                writeln!(f, "{}", err)?;
+                writeln!(f, "{}", hr)?;
+                write!(f, ")")?;
+                Ok(())
+            }
+            Error::Internal(ref err) => {
                 let hr: String = repeat('~').take(79).collect();
                 writeln!(f, "Syntax(")?;
                 writeln!(f, "{}", hr)?;

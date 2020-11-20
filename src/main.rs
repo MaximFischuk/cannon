@@ -24,6 +24,7 @@ extern crate derive_builder;
 
 mod app;
 mod configuration;
+mod connection;
 // mod reporter;
 mod time;
 

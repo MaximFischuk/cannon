@@ -4,9 +4,9 @@ use crate::app::error::Error;
 use crate::app::hooks::Executable;
 use crate::app::hooks::ExecutionResult;
 use crate::configuration::manifest::CaptureEntry;
+use crate::connection::SendMessage;
 use bytes::Bytes;
 use core::slice::Iter;
-use reqwest::StatusCode;
 use std::time::Duration;
 
 pub(crate) struct JobGroup<T> {
@@ -20,9 +20,11 @@ pub(crate) struct RunInfo {
     pub captures: Vec<CaptureEntry>,
 }
 
+#[derive(Builder)]
 pub struct ExecutionResponse {
     body: Bytes,
     additional: CaptureValue,
+    execution_time: Duration,
 }
 
 impl RunInfo {
@@ -74,8 +76,12 @@ impl<T> Executable for JobGroup<T> {
 }
 
 impl ExecutionResponse {
-    pub fn new(body: Bytes, additional: CaptureValue) -> Self {
-        Self { body, additional }
+    pub fn new(body: Bytes, additional: CaptureValue, execution_time: Duration) -> Self {
+        Self {
+            body,
+            additional,
+            execution_time,
+        }
     }
 
     pub fn body(&self) -> &Bytes {
@@ -85,6 +91,10 @@ impl ExecutionResponse {
     pub fn additional(&self) -> &CaptureValue {
         &self.additional
     }
+
+    pub fn builder() -> ExecutionResponseBuilder {
+        ExecutionResponseBuilder::default()
+    }
 }
 
 impl From<Bytes> for ExecutionResponse {
@@ -92,6 +102,7 @@ impl From<Bytes> for ExecutionResponse {
         Self {
             body,
             additional: CaptureValue::Nil,
+            execution_time: Duration::default(),
         }
     }
 }
@@ -101,6 +112,7 @@ impl From<CaptureValue> for ExecutionResponse {
         Self {
             body: Bytes::default(),
             additional,
+            execution_time: Duration::default(),
         }
     }
 }
@@ -115,19 +127,6 @@ pub trait JobExecutionHooks<T, R> {
     ) -> Result<ExecutionResponse, Error>;
 }
 
-pub enum ExecutionCode {
-    Http { code: StatusCode },
-}
-
-pub struct Status {
-    execution_time: Duration,
-    execution_code: ExecutionCode,
-}
-
 pub trait GetUuid {
     fn get_uuid(&self) -> uuid::Uuid;
-}
-
-pub trait SendMessage<T, R> {
-    fn send(&self, data: T) -> R;
 }
