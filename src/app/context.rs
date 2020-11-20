@@ -1,18 +1,21 @@
 use crate::app::CaptureValue;
+use csv::Reader;
 use derivative::*;
 use kstring::KString;
 use liquid::Object;
 use liquid::Parser;
+use std::collections::HashMap;
+use std::fs::File;
 use std::iter::FromIterator;
 use std::sync::Arc;
 
 #[derive(Derivative)]
 #[derivative(Debug)]
 pub struct Context {
-    globals: Object,
-    contextual: Object,
     #[derivative(Debug = "ignore")]
     parser: Arc<Parser>,
+    variables: Object,
+    readers: HashMap<String, Reader<File>>,
 }
 
 #[derive(Clone)]
@@ -22,12 +25,23 @@ pub struct Report {
     pub status: u16,
 }
 
-impl Context {
+#[derive(Derivative)]
+#[derivative(Debug)]
+pub(in crate::app) struct ContextPool {
+    globals: Object,
+    contextual: Object,
+    #[derivative(Debug = "ignore")]
+    parser: Arc<Parser>,
+    readers: HashMap<String, Reader<File>>,
+}
+
+impl ContextPool {
     pub fn new() -> Self {
         Self {
             globals: Object::default(),
             contextual: Object::default(),
             parser: Arc::new(liquid::ParserBuilder::with_stdlib().build().unwrap()),
+            readers: HashMap::new(),
         }
     }
 
@@ -40,6 +54,7 @@ impl Context {
             globals: object,
             contextual: Object::default(),
             parser: Arc::new(liquid::ParserBuilder::with_stdlib().build().unwrap()),
+            readers: HashMap::new(),
         }
     }
 
@@ -48,6 +63,10 @@ impl Context {
         T: IntoIterator<Item = (KString, CaptureValue)>,
     {
         self.globals.extend(iter);
+    }
+
+    pub fn push_csv_file_reader(&mut self, name: String, reader: Reader<File>) {
+        self.readers.insert(name, reader);
     }
 
     pub fn push_contextual_vars<T>(&mut self, iter: T, local_id: uuid::Uuid)
@@ -59,12 +78,33 @@ impl Context {
         self.contextual.insert(key, CaptureValue::from(object));
     }
 
+    #[inline]
+    pub fn default_context(&self) -> Context {
+        self.new_context(uuid::Uuid::default())
+    }
+
+    pub fn new_context(&self, local_id: uuid::Uuid) -> Context {
+        let mut contextual_vars = self.globals.clone();
+        let key: KString = local_id.to_simple().to_string().into();
+        if let Some(value) = self.contextual.get(&key) {
+            let local = value.clone().into_object().unwrap();
+            contextual_vars.extend(local);
+        }
+        Context {
+            variables: contextual_vars,
+            parser: self.parser.clone(),
+            readers: HashMap::new(),
+        }
+    }
+}
+
+impl Context {
     pub fn apply(&self, body: &String) -> String {
         let template = match self.parser.parse(body.as_str()) {
             Ok(template) => template,
             Err(err) => panic!("Cannot unwind template, {:#?}", err),
         };
-        match template.render(&self.globals) {
+        match template.render(&self.variables) {
             Ok(rendered) => rendered,
             Err(err) => panic!("Cannot render template with data, {:#?}", err),
         }
@@ -72,35 +112,21 @@ impl Context {
 
     pub fn find(&self, key: &String) -> Option<CaptureValue> {
         let k = KString::from(key.to_owned());
-        self.globals.get(&k).map(Clone::clone)
-    }
-
-    pub fn isolated(&self, local_id: uuid::Uuid) -> Self {
-        let mut contextual_vars = self.globals.clone();
-        let key: KString = local_id.to_simple().to_string().into();
-        let local = match self.contextual.get(&key) {
-            Some(value) => value.clone().into_object().unwrap(),
-            None => panic!("Local {} not found", local_id),
-        };
-        contextual_vars.extend(local);
-        Self {
-            globals: contextual_vars,
-            contextual: Object::default(),
-            parser: self.parser.clone(),
-        }
+        self.variables.get(&k).map(Clone::clone)
     }
 }
 
 #[cfg(test)]
 mod test {
 
+    use super::ContextPool;
     use crate::app::CaptureValue;
-    use crate::app::Context;
 
     #[test]
     fn test_apply_template() {
         let value = CaptureValue::Scalar(liquid::model::scalar::Scalar::new(42));
-        let context = Context::with_vars(vec![("expect".into(), value.clone())]);
+        let context = ContextPool::with_vars(vec![("expect".into(), value.clone())])
+            .new_context(uuid::Uuid::default());
         let body = "{{expect}}".to_owned();
         let result = context.apply(&body);
 

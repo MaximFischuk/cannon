@@ -49,6 +49,7 @@ fn assert_value(ctx: &Context, value: &CaptureValue, assert: &AssertFunction) ->
 mod test {
 
     use super::*;
+    use crate::app::ContextPool;
     use crate::configuration::manifest::AssertParamValueVar;
 
     #[test]
@@ -57,7 +58,11 @@ mod test {
         let assert_function = AssertFunction::Equal(AssertParamValueVar::Value(
             CaptureValue::Scalar(liquid::model::scalar::Scalar::new(42)),
         ));
-        let result = assert_value(&Context::new(), &value, &assert_function);
+        let result = assert_value(
+            &ContextPool::new().default_context(),
+            &value,
+            &assert_function,
+        );
 
         assert!(result);
     }
@@ -67,7 +72,7 @@ mod test {
         let value = CaptureValue::Scalar(liquid::model::scalar::Scalar::new(42));
         let assert_function = AssertFunction::Equal(AssertParamValueVar::Var("expect".into()));
         let result = assert_value(
-            &Context::with_vars(vec![("expect".into(), value.clone())]),
+            &ContextPool::with_vars(vec![("expect".into(), value.clone())]).default_context(),
             &value,
             &assert_function,
         );
@@ -81,7 +86,11 @@ mod test {
         let assert_function = AssertFunction::NotEqual(AssertParamValueVar::Value(
             CaptureValue::Scalar(liquid::model::scalar::Scalar::new(43)),
         ));
-        let result = assert_value(&Context::new(), &value, &assert_function);
+        let result = assert_value(
+            &ContextPool::new().default_context(),
+            &value,
+            &assert_function,
+        );
 
         assert!(result);
     }
@@ -92,7 +101,7 @@ mod test {
         let assert_function = AssertFunction::NotEqual(AssertParamValueVar::Var("expect".into()));
         let value = CaptureValue::Scalar(liquid::model::scalar::Scalar::new(43));
         let result = assert_value(
-            &Context::with_vars(vec![("expect".into(), expected.clone())]),
+            &ContextPool::with_vars(vec![("expect".into(), expected.clone())]).default_context(),
             &value,
             &assert_function,
         );

@@ -106,6 +106,8 @@ pub struct Manifest {
     pub pipeline: Pipeline,
     #[serde(default)]
     pub vars: Object,
+    #[serde(default)]
+    pub resources: Vec<PathBuf>,
 }
 
 #[derive(Debug, Deserialize, Default)]

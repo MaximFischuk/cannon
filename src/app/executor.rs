@@ -81,6 +81,10 @@ impl ExecutionResponse {
     pub fn body(&self) -> &Bytes {
         &self.body
     }
+
+    pub fn additional(&self) -> &CaptureValue {
+        &self.additional
+    }
 }
 
 impl From<Bytes> for ExecutionResponse {
