@@ -98,7 +98,7 @@ impl App {
                             let mut assert_result: bool = true;
                             let value = entry.cap.capture(&mut local_context, body.body());
                             for functor in &entry.on {
-                                assert_result &= functor.assert(&mut local_context, &value);
+                                assert_result &= functor.assert(&local_context, &value);
                             }
                             info!("Captured value: {:?}", value);
                             if assert_result {

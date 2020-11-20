@@ -3,18 +3,10 @@ use std::iter::repeat;
 
 /// An error that occurred during parsing or compiling a regular expression.
 #[derive(Clone, PartialEq)]
+#[non_exhaustive]
 pub enum Error {
-    /// A syntax error.
     Syntax(String),
-
     UnitNotSupported(String),
-    /// Hints that destructuring should not be exhaustive.
-    ///
-    /// This enum may grow additional variants, so this makes sure clients
-    /// don't count on exhaustive matching. (Otherwise, adding a new variant
-    /// could break existing code.)
-    #[doc(hidden)]
-    __Nonexhaustive,
 }
 
 impl ::std::error::Error for Error {
@@ -23,7 +15,6 @@ impl ::std::error::Error for Error {
         match *self {
             Error::Syntax(ref err) => err,
             Error::UnitNotSupported(ref err) => err,
-            Error::__Nonexhaustive => unreachable!(),
         }
     }
 }
@@ -33,7 +24,6 @@ impl fmt::Display for Error {
         match *self {
             Error::Syntax(ref err) => err.fmt(f),
             Error::UnitNotSupported(ref err) => err.fmt(f),
-            Error::__Nonexhaustive => unreachable!(),
         }
     }
 }
@@ -63,7 +53,6 @@ impl fmt::Debug for Error {
                 write!(f, ")")?;
                 Ok(())
             }
-            Error::__Nonexhaustive => f.debug_tuple("__Nonexhaustive").finish(),
         }
     }
 }

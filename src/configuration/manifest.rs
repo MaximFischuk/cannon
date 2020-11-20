@@ -156,7 +156,7 @@ impl Manifest {
 impl Into<Bytes> for BodyEntry {
     fn into(self) -> Bytes {
         match self {
-            BodyEntry::Raw(body) => Bytes::from(body.to_owned()),
+            BodyEntry::Raw(body) => Bytes::from(body),
             BodyEntry::Json(body) => Bytes::from(serde_json::to_vec(&body).unwrap()),
             BodyEntry::Uri(body) => Bytes::from(read_uri(&body).unwrap()),
             BodyEntry::Base64(body) => Bytes::from(base64::decode(body).unwrap()),

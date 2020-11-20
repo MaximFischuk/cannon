@@ -101,7 +101,7 @@ mod test {
         let assert_function = AssertFunction::NotEqual(AssertParamValueVar::Var("expect".into()));
         let value = CaptureValue::Scalar(liquid::model::scalar::Scalar::new(43));
         let result = assert_value(
-            &ContextPool::with_vars(vec![("expect".into(), expected.clone())]).default_context(),
+            &ContextPool::with_vars(vec![("expect".into(), expected)]).default_context(),
             &value,
             &assert_function,
         );

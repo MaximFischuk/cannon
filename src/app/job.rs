@@ -87,7 +87,7 @@ impl JobExecutionHooks<HttpRequest<Vec<u8>>, Result<HttpResponse<Bytes>, Error>>
                     .execution_time(elapsed)
                     .additional(CaptureValue::default())
                     .build();
-                result.map_err(|e| ExecutionError::Internal(e))
+                result.map_err(ExecutionError::Internal)
             }
             Err(e) => {
                 error!("Failed to send request {}", e);

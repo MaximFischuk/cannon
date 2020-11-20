@@ -101,8 +101,8 @@ impl ContextPool {
 }
 
 impl Context {
-    pub fn apply(&self, body: &String) -> String {
-        let template = match self.parser.parse(body.as_str()) {
+    pub fn apply(&self, body: &str) -> String {
+        let template = match self.parser.parse(body) {
             Ok(template) => template,
             Err(err) => panic!("Cannot unwind template, {:#?}", err),
         };
@@ -112,7 +112,7 @@ impl Context {
         }
     }
 
-    pub fn find(&self, key: &String) -> Option<CaptureValue> {
+    pub fn find(&self, key: &str) -> Option<CaptureValue> {
         let k = KString::from(key.to_owned());
         self.variables.get(&k).map(Clone::clone)
     }
@@ -128,7 +128,7 @@ mod test {
     fn test_apply_template() {
         let value = CaptureValue::Scalar(liquid::model::scalar::Scalar::new(42));
         let context =
-            ContextPool::with_vars(vec![("expect".into(), value.clone())]).default_context();
+            ContextPool::with_vars(vec![("expect".into(), value)]).default_context();
         let body = "{{expect}}".to_owned();
         let result = context.apply(&body);
 
