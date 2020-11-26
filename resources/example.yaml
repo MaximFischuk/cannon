@@ -1,7 +1,7 @@
 name: Example
 collect: mongodb://root:test123@localhost:27017
 resources:
-  - uri: file://./resources/user_credentials.csv
+  - ./resources/user_credentials.csv
 vars:
   in-json: test text
 pipeline:
@@ -16,14 +16,6 @@ pipeline:
         a: hello
         b: Ukraine
         bc: test
-      before:
-        js:
-          uri: file://./scripts/before1.js
-      after:
-        js:
-          code: |-
-            "use strict";
-            ctx.assert(ctx.response.status === 200);
     - name: Echo example (POST)
       request: https://postman-echo.com/post
       method: POST
@@ -40,7 +32,8 @@ pipeline:
             "test1": {
               "key": "test text",
               "template": "{{in-json | capitalize}}",
-              "array": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+              "array": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+              "user": "{{user_credentials.username}}"
             }
           }
       capture:

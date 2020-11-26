@@ -1,10 +1,10 @@
 use crate::app::CaptureValue;
-use csv::Reader;
+use csv::{StringRecordsIntoIter, Reader};
 use derivative::*;
 use kstring::KString;
-use liquid::Object;
+use liquid::{Object, model::Value};
 use liquid::Parser;
-use std::collections::HashMap;
+use std::{collections::HashMap, path::Path};
 use std::fs::File;
 use std::iter::FromIterator;
 use std::sync::Arc;
@@ -15,7 +15,8 @@ pub struct Context {
     #[derivative(Debug = "ignore")]
     parser: Arc<Parser>,
     variables: Object,
-    readers: HashMap<String, Reader<File>>,
+    #[derivative(Debug = "ignore")]
+    records: HashMap<String, StringRecordsIntoIter<File>>,
 }
 
 #[derive(Clone)]
@@ -32,7 +33,7 @@ pub(in crate::app) struct ContextPool {
     contextual: Object,
     #[derivative(Debug = "ignore")]
     parser: Arc<Parser>,
-    readers: HashMap<String, Reader<File>>,
+    resources: HashMap<String, Box<Path>>,
 }
 
 impl ContextPool {
@@ -42,7 +43,7 @@ impl ContextPool {
             globals: Object::default(),
             contextual: Object::default(),
             parser: Arc::new(liquid::ParserBuilder::with_stdlib().build().unwrap()),
-            readers: HashMap::new(),
+            resources: HashMap::new(),
         }
     }
 
@@ -55,7 +56,7 @@ impl ContextPool {
             globals: object,
             contextual: Object::default(),
             parser: Arc::new(liquid::ParserBuilder::with_stdlib().build().unwrap()),
-            readers: HashMap::new(),
+            resources: HashMap::new(),
         }
     }
 
@@ -66,8 +67,8 @@ impl ContextPool {
         self.globals.extend(iter);
     }
 
-    pub fn push_csv_file_reader(&mut self, name: String, reader: Reader<File>) {
-        self.readers.insert(name, reader);
+    pub fn push_resource_file(&mut self, name: String, path: Box<Path>) {
+        self.resources.insert(name, path);
     }
 
     pub fn push_contextual_vars<T>(&mut self, iter: T, local_id: uuid::Uuid)
@@ -92,10 +93,21 @@ impl ContextPool {
             let local = value.clone().into_object().unwrap();
             contextual_vars.extend(local);
         }
+        let mut records = HashMap::new();
+        for (key, value) in &self.resources {
+            match Reader::from_path(value) {
+                Ok(reader) => {
+                    records.insert(key.to_owned(), reader.into_records());
+                },
+                Err(err) => {
+                    error!("Cannot create resource reader '{}'", err);
+                }
+            };
+        }
         Context {
             variables: contextual_vars,
             parser: self.parser.clone(),
-            readers: HashMap::new(),
+            records,
         }
     }
 }
@@ -115,6 +127,29 @@ impl Context {
     pub fn find(&self, key: &str) -> Option<CaptureValue> {
         let k = KString::from(key.to_owned());
         self.variables.get(&k).map(Clone::clone)
+    }
+
+    pub fn next(&mut self) {
+        for (key, record) in &mut self.records {
+            let headers = record.reader_mut().headers().unwrap().to_owned();
+            match record.next() {
+                Some(Ok(value)) => {
+                    let mut object = Object::new();
+                    for pos in 0..headers.len() {
+                        if let (Some(h), Some(v)) = (headers.get(pos), value.get(pos)) {
+                            object.insert(h.to_owned().into(), Value::scalar(v.to_owned()));
+                        }
+                    }
+                    self.variables.insert(key.to_owned().into(), CaptureValue::from(object));
+                },
+                Some(Err(err)) => {
+                    error!("Cannot unwind variable {:?}", err);
+                },
+                None => {
+                    error!("No iteration data remains");
+                }
+            }
+        }
     }
 }
 

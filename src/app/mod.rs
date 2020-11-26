@@ -57,13 +57,8 @@ impl App {
         }
         for resource in manifest.resources {
             let path: Box<Path> = resource.try_into().unwrap();
-            match csv::Reader::from_path(&path) {
-                Ok(reader) => context.push_csv_file_reader(
-                    path.file_stem().unwrap().to_str().unwrap().to_owned(),
-                    reader,
-                ),
-                Err(err) => error!("Cannot create resource reader cause: {}", err),
-            };
+            let name = path.file_stem().unwrap().to_str().unwrap().to_owned();
+            context.push_resource_file(name, path);
         }
         App {
             client,
@@ -84,6 +79,7 @@ impl App {
             for i in 0..info.repeats {
                 info!("Iteration {}", i);
                 sleep(info.delay);
+                local_context.next();
                 // job.before(locked_context);
                 let now = Instant::now();
                 let result = job.execute(&mut local_context, &self.client);
