@@ -1,8 +1,6 @@
 use crate::app::error::Error as ExecutionError;
 use crate::app::executor::ExecutionResponse;
-use crate::app::CaptureValue;
 use crate::app::Context;
-use crate::app::GetUuid;
 use crate::app::JobExecutionHooks;
 use crate::configuration::manifest::PipelineEntry;
 use crate::connection::SendMessage;
@@ -15,26 +13,18 @@ use reqwest::Method;
 use std::collections::HashMap;
 use std::time::Instant;
 
+use super::capture::Convert;
+
 pub struct HttpJob {
-    id: uuid::Uuid,
-    name: String,
     request: String,
     method: Method,
     headers: HashMap<String, String>,
     body: Option<Bytes>,
 }
 
-impl GetUuid for HttpJob {
-    fn get_uuid(&self) -> uuid::Uuid {
-        self.id
-    }
-}
-
 impl From<&PipelineEntry> for HttpJob {
     fn from(entry: &PipelineEntry) -> Self {
         Self {
-            id: uuid::Uuid::new_v4(),
-            name: entry.name.clone(),
             request: entry.request.clone(),
             method: entry.method.clone(),
             headers: entry.headers.clone(),
@@ -85,7 +75,7 @@ impl JobExecutionHooks<HttpRequest<Vec<u8>>, Result<HttpResponse<Bytes>, Error>>
                 let result = ExecutionResponse::builder()
                     .body(response.body().clone())
                     .execution_time(elapsed)
-                    .additional(CaptureValue::default())
+                    .additional(response.headers().convert())
                     .build();
                 result.map_err(ExecutionError::Internal)
             }

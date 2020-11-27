@@ -3,6 +3,7 @@ use crate::configuration::manifest::AssertParamValueVar;
 use crate::configuration::manifest::Capture;
 use crate::configuration::manifest::CaptureEntry;
 use bytes::Bytes;
+use http::{HeaderMap, HeaderValue};
 use liquid::Object;
 use serde_json::Value;
 
@@ -16,12 +17,12 @@ pub(crate) trait Resolvable {
     fn resolve(&self, ctx: &Context) -> Result<CaptureValue, String>;
 }
 
-pub trait IntoLiquid<T> {
-    fn into_liquid(&self) -> T;
+pub trait Convert<T> {
+    fn convert(&self) -> T;
 }
 
-impl IntoLiquid<CaptureValue> for Value {
-    fn into_liquid(&self) -> CaptureValue {
+impl Convert<CaptureValue> for Value {
+    fn convert(&self) -> CaptureValue {
         match self {
             Value::Null => CaptureValue::Nil,
             Value::Number(num) if num.is_i64() => CaptureValue::scalar(num.as_i64().unwrap()),
@@ -32,12 +33,12 @@ impl IntoLiquid<CaptureValue> for Value {
             Value::Bool(boolean) => CaptureValue::scalar(*boolean),
             Value::String(string) => CaptureValue::scalar(string.to_string()),
             Value::Array(array) => {
-                CaptureValue::Array(array.iter().map(Value::into_liquid).collect())
+                CaptureValue::Array(array.iter().map(Value::convert).collect())
             }
             Value::Object(object) => {
                 let mut liq_object = Object::new();
                 for (key, value) in object {
-                    liq_object.insert(key.clone().into(), value.into_liquid());
+                    liq_object.insert(key.clone().into(), value.convert());
                 }
                 CaptureValue::Object(liq_object)
             }
@@ -46,15 +47,27 @@ impl IntoLiquid<CaptureValue> for Value {
     }
 }
 
-impl IntoLiquid<CaptureValue> for Vec<Value> {
-    fn into_liquid(&self) -> CaptureValue {
+impl Convert<CaptureValue> for Vec<Value> {
+    fn convert(&self) -> CaptureValue {
         if self.len() == 1 {
-            self[0].into_liquid()
+            self[0].convert()
         } else if !self.is_empty() {
-            CaptureValue::Array(self.iter().map(Value::into_liquid).collect())
+            CaptureValue::Array(self.iter().map(Value::convert).collect())
         } else {
             CaptureValue::Nil
         }
+    }
+}
+
+impl Convert<CaptureValue> for HeaderMap<HeaderValue> {
+    fn convert(&self) -> CaptureValue {
+        let mut object = Object::new();
+        for (name, value) in self {
+            let name_str = name.as_str();
+            let value_str = value.as_bytes();
+            object.insert(name_str.to_owned().into(), CaptureValue::scalar(String::from_utf8(Vec::from(value_str)).unwrap()));
+        }
+        CaptureValue::from(object)
     }
 }
 
@@ -74,7 +87,7 @@ impl Capturable<Bytes> for &Vec<CaptureEntry> {
                     let data: Value = serde_json::from_str(&body_string)
                         .expect("Cannot serialize object to json");
                     let captured: Vec<Value> = selector.find(&data).cloned().collect();
-                    captured.into_liquid()
+                    captured.convert()
                 }
                 Capture::Regex(_) => unimplemented!(),
             };
@@ -98,7 +111,7 @@ impl Capturable<Bytes> for Capture {
                 let data: Value =
                     serde_json::from_str(&body_string).expect("Cannot serialize object to json");
                 let captured: Vec<Value> = selector.find(&data).cloned().collect();
-                captured.into_liquid()
+                captured.convert()
             }
             Capture::Regex(_) => unimplemented!(),
         };
@@ -116,9 +129,9 @@ impl Capturable<String> for Capture {
                     serde_json::from_str(data).expect("Cannot serialize object to json");
                 let captured: Vec<Value> = selector.find(&data).cloned().collect();
                 if captured.len() == 1 {
-                    captured[0].into_liquid()
+                    captured[0].convert()
                 } else if !captured.is_empty() {
-                    captured.into_liquid()
+                    captured.convert()
                 } else {
                     CaptureValue::Nil
                 }
@@ -159,25 +172,25 @@ mod tests {
         let value_array = json!(["an", "array"]);
         let value_object = json!({ "an": "object" });
 
-        assert!(value_null.into_liquid().as_view().is_nil());
+        assert!(value_null.convert().as_view().is_nil());
         {
-            let value = value_number_int.into_liquid();
+            let value = value_number_int.convert();
             assert_eq!(value, CaptureValue::scalar(42));
         }
         {
-            let value = value_number_float.into_liquid();
+            let value = value_number_float.convert();
             assert_eq!(value, CaptureValue::scalar(42.5));
         }
         {
-            let value = value_bool.into_liquid();
+            let value = value_bool.convert();
             assert_eq!(value, CaptureValue::scalar(true));
         }
         {
-            let value = value_string.into_liquid();
+            let value = value_string.convert();
             assert_eq!(value, CaptureValue::scalar("some string"));
         }
         {
-            let value = value_array.into_liquid();
+            let value = value_array.convert();
             let expected = CaptureValue::Array(vec![
                 CaptureValue::scalar("an"),
                 CaptureValue::scalar("array"),
@@ -185,7 +198,7 @@ mod tests {
             assert_eq!(value, expected);
         }
         {
-            let value = value_object.into_liquid();
+            let value = value_object.convert();
             let object: Object = [("an".into(), CaptureValue::scalar("object"))]
                 .iter()
                 .cloned()

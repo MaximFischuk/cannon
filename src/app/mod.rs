@@ -13,7 +13,7 @@ use crate::app::context::Context;
 use crate::app::context::ContextPool;
 use crate::app::executor::JobGroup;
 use crate::app::executor::RunInfo;
-use crate::app::executor::{GetUuid, JobExecutionHooks};
+use crate::app::executor::JobExecutionHooks;
 use crate::app::job::HttpJob;
 use crate::configuration::manifest::Manifest;
 use liquid::Object;
@@ -51,8 +51,8 @@ impl App {
         let mut http_jobs = vec![];
         for entry in manifest.pipeline.test {
             let job = HttpJob::from(&entry);
-            let info = RunInfo::new(entry.repeats, entry.delay, entry.capture);
-            context.push_contextual_vars(entry.vars, job.get_uuid());
+            let info = RunInfo::new(entry.name, entry.repeats, entry.delay, entry.capture);
+            context.push_contextual_vars(entry.vars, info.id);
             http_jobs.push((job, info));
         }
         for resource in manifest.resources {
@@ -63,17 +63,17 @@ impl App {
         App {
             client,
             name: manifest.name,
-            jobs_group: JobGroup::new(String::default(), http_jobs),
+            jobs_group: JobGroup::new("default".to_owned(), http_jobs),
             context: Arc::new(Mutex::new(context)),
         }
     }
 
     pub fn run(&self) {
         info!("Starting pipeline '{}'", self.name);
-        info!("Registered {} jobs", self.jobs_group.amount());
+        info!("Registered {} jobs in {} group", self.jobs_group.amount(), self.jobs_group.name());
         for (job, info) in self.jobs_group.iter() {
             let locked_context = lock!(self.context);
-            let mut local_context = locked_context.new_context(job.get_uuid());
+            let mut local_context = locked_context.new_context(info.id);
             drop(locked_context);
             let mut exported = Object::default();
             for i in 0..info.repeats {
@@ -83,9 +83,9 @@ impl App {
                 // job.before(locked_context);
                 let now = Instant::now();
                 let result = job.execute(&mut local_context, &self.client);
-                info!(
+                debug!(
                     "Elapsed for execution of test({}), {:?} ms",
-                    job.get_uuid(),
+                    info.id,
                     now.elapsed().as_millis()
                 );
                 match result {
@@ -101,6 +101,7 @@ impl App {
                                 exported.insert(entry.variable.clone().into(), value);
                             }
                         }
+                        info!("Finished job '{}'({}) in {} ms", info.name, info.id, body.execution_time().as_millis());
                     }
                     Err(e) => error!("{:#?}", e),
                 }

@@ -15,6 +15,8 @@ pub(crate) struct JobGroup<T> {
 }
 
 pub(crate) struct RunInfo {
+    pub name: String,
+    pub id: uuid::Uuid,
     pub repeats: u64,
     pub delay: Duration,
     pub captures: Vec<CaptureEntry>,
@@ -28,8 +30,10 @@ pub struct ExecutionResponse {
 }
 
 impl RunInfo {
-    pub fn new(repeats: u64, delay: Duration, captures: Vec<CaptureEntry>) -> Self {
+    pub fn new(name: String, repeats: u64, delay: Duration, captures: Vec<CaptureEntry>) -> Self {
         Self {
+            id: uuid::Uuid::new_v4(),
+            name,
             repeats,
             delay,
             captures,
@@ -50,6 +54,11 @@ impl<T> JobGroup<T> {
     #[inline]
     pub fn amount(&self) -> usize {
         self.jobs.len()
+    }
+
+    #[inline]
+    pub fn name(&self) -> String {
+        self.name.clone()
     }
 }
 
@@ -92,6 +101,10 @@ impl ExecutionResponse {
         &self.additional
     }
 
+    pub fn execution_time(&self) -> Duration {
+        self.execution_time
+    }
+
     pub fn builder() -> ExecutionResponseBuilder {
         ExecutionResponseBuilder::default()
     }
@@ -99,21 +112,21 @@ impl ExecutionResponse {
 
 impl From<Bytes> for ExecutionResponse {
     fn from(body: Bytes) -> Self {
-        Self {
+        Self::new(
             body,
-            additional: CaptureValue::Nil,
-            execution_time: Duration::default(),
-        }
+            CaptureValue::Nil,
+            Duration::default(),
+        )
     }
 }
 
 impl From<CaptureValue> for ExecutionResponse {
     fn from(additional: CaptureValue) -> Self {
-        Self {
-            body: Bytes::default(),
+        Self::new(
+            Bytes::default(),
             additional,
-            execution_time: Duration::default(),
-        }
+            Duration::default(),
+        )
     }
 }
 
@@ -125,8 +138,4 @@ pub trait JobExecutionHooks<T, R> {
         context: &mut Context,
         sender: &impl SendMessage<T, R>,
     ) -> Result<ExecutionResponse, Error>;
-}
-
-pub trait GetUuid {
-    fn get_uuid(&self) -> uuid::Uuid;
 }
