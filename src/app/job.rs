@@ -34,15 +34,15 @@ impl From<&PipelineEntry> for HttpJob {
 }
 
 impl JobExecutionHooks<HttpRequest<Vec<u8>>, Result<HttpResponse<Bytes>, Error>> for HttpJob {
-    fn before(&self, _context: &mut Context) -> Result<String, String> {
+    fn before(&self, _context: &Context) -> Result<String, String> {
         todo!()
     }
-    fn after(&self, _context: &mut Context) -> Result<String, String> {
+    fn after(&self, _context: &Context) -> Result<String, String> {
         todo!()
     }
     fn execute(
         &self,
-        context: &mut Context,
+        context: &Context,
         sender: &impl SendMessage<HttpRequest<Vec<u8>>, Result<HttpResponse<Bytes>, Error>>,
     ) -> Result<ExecutionResponse, ExecutionError> {
         let mut request = HttpRequest::builder()
@@ -64,9 +64,9 @@ impl JobExecutionHooks<HttpRequest<Vec<u8>>, Result<HttpResponse<Bytes>, Error>>
         let now = Instant::now();
         match sender.send(prepared) {
             Ok(response) => {
-                let body = response.body();
                 let elapsed = now.elapsed();
-                debug!(
+                let body = response.body();
+                info!(
                     "Received response {:#?} body {:#?} in {} ms",
                     response,
                     body,

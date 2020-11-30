@@ -10,7 +10,7 @@ use serde_json::Value;
 pub type CaptureValue = liquid::model::Value;
 
 pub(crate) trait Capturable<T> {
-    fn capture(&self, ctx: &mut Context, data: &T) -> CaptureValue;
+    fn capture(&self, ctx: &Context, data: &T) -> CaptureValue;
 }
 
 pub(crate) trait Resolvable {
@@ -32,9 +32,7 @@ impl Convert<CaptureValue> for Value {
             Value::Number(num) if num.is_f64() => CaptureValue::scalar(num.as_f64().unwrap()),
             Value::Bool(boolean) => CaptureValue::scalar(*boolean),
             Value::String(string) => CaptureValue::scalar(string.to_string()),
-            Value::Array(array) => {
-                CaptureValue::Array(array.iter().map(Value::convert).collect())
-            }
+            Value::Array(array) => CaptureValue::Array(array.iter().map(Value::convert).collect()),
             Value::Object(object) => {
                 let mut liq_object = Object::new();
                 for (key, value) in object {
@@ -65,14 +63,17 @@ impl Convert<CaptureValue> for HeaderMap<HeaderValue> {
         for (name, value) in self {
             let name_str = name.as_str();
             let value_str = value.as_bytes();
-            object.insert(name_str.to_owned().into(), CaptureValue::scalar(String::from_utf8(Vec::from(value_str)).unwrap()));
+            object.insert(
+                name_str.to_owned().into(),
+                CaptureValue::scalar(String::from_utf8(Vec::from(value_str)).unwrap()),
+            );
         }
         CaptureValue::from(object)
     }
 }
 
 impl Capturable<Bytes> for &Vec<CaptureEntry> {
-    fn capture(&self, _ctx: &mut Context, data: &Bytes) -> CaptureValue {
+    fn capture(&self, _ctx: &Context, data: &Bytes) -> CaptureValue {
         let body_string = match String::from_utf8(data.to_vec()) {
             Ok(s) => s,
             Err(e) => {
@@ -98,7 +99,7 @@ impl Capturable<Bytes> for &Vec<CaptureEntry> {
 }
 
 impl Capturable<Bytes> for Capture {
-    fn capture(&self, _ctx: &mut Context, data: &Bytes) -> CaptureValue {
+    fn capture(&self, _ctx: &Context, data: &Bytes) -> CaptureValue {
         let body_string = match String::from_utf8(data.to_vec()) {
             Ok(s) => s,
             Err(e) => {
@@ -122,7 +123,7 @@ impl Capturable<Bytes> for Capture {
 }
 
 impl Capturable<String> for Capture {
-    fn capture(&self, _ctx: &mut Context, data: &String) -> CaptureValue {
+    fn capture(&self, _ctx: &Context, data: &String) -> CaptureValue {
         let value = match self {
             Capture::Json(selector) => {
                 let data: Value =

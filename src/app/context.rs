@@ -1,13 +1,13 @@
 use crate::app::CaptureValue;
-use csv::{StringRecordsIntoIter, Reader};
+use csv::{Reader, StringRecordsIntoIter};
 use derivative::*;
 use kstring::KString;
-use liquid::{Object, model::Value};
 use liquid::Parser;
-use std::{collections::HashMap, path::Path};
+use liquid::{model::Value, Object};
 use std::fs::File;
 use std::iter::FromIterator;
 use std::sync::Arc;
+use std::{collections::HashMap, path::Path};
 
 #[derive(Derivative)]
 #[derivative(Debug)]
@@ -98,7 +98,7 @@ impl ContextPool {
             match Reader::from_path(value) {
                 Ok(reader) => {
                     records.insert(key.to_owned(), reader.into_records());
-                },
+                }
                 Err(err) => {
                     error!("Cannot create resource reader '{}'", err);
                 }
@@ -129,6 +129,13 @@ impl Context {
         self.variables.get(&k).map(Clone::clone)
     }
 
+    pub fn push_vars<T>(&mut self, iter: T)
+    where
+        T: IntoIterator<Item = (KString, CaptureValue)>,
+    {
+        self.variables.extend(iter);
+    }
+
     pub fn next(&mut self) {
         for (key, record) in &mut self.records {
             let headers = record.reader_mut().headers().unwrap().to_owned();
@@ -140,11 +147,12 @@ impl Context {
                             object.insert(h.to_owned().into(), Value::scalar(v.to_owned()));
                         }
                     }
-                    self.variables.insert(key.to_owned().into(), CaptureValue::from(object));
-                },
+                    self.variables
+                        .insert(key.to_owned().into(), CaptureValue::from(object));
+                }
                 Some(Err(err)) => {
                     error!("Cannot unwind variable {:?}", err);
-                },
+                }
                 None => {
                     error!("No iteration data remains");
                 }
@@ -155,15 +163,14 @@ impl Context {
 
 #[cfg(test)]
 mod test {
-
+  
     use super::ContextPool;
     use crate::app::CaptureValue;
 
     #[test]
     fn test_apply_template() {
         let value = CaptureValue::Scalar(liquid::model::scalar::Scalar::new(42));
-        let context =
-            ContextPool::with_vars(vec![("expect".into(), value)]).default_context();
+        let context = ContextPool::with_vars(vec![("expect".into(), value)]).default_context();
         let body = "{{expect}}".to_owned();
         let result = context.apply(&body);
 

@@ -1,10 +1,10 @@
-use crate::app::capture::CaptureValue;
 use crate::app::context::Context;
 use crate::app::error::Error;
 use crate::app::hooks::Executable;
 use crate::app::hooks::ExecutionResult;
 use crate::configuration::manifest::CaptureEntry;
 use crate::connection::SendMessage;
+use crate::{app::capture::CaptureValue, configuration::manifest::OnEntry};
 use bytes::Bytes;
 use core::slice::Iter;
 use std::time::Duration;
@@ -20,6 +20,7 @@ pub(crate) struct RunInfo {
     pub repeats: u64,
     pub delay: Duration,
     pub captures: Vec<CaptureEntry>,
+    pub operations: Vec<OnEntry>,
 }
 
 #[derive(Builder)]
@@ -30,13 +31,20 @@ pub struct ExecutionResponse {
 }
 
 impl RunInfo {
-    pub fn new(name: String, repeats: u64, delay: Duration, captures: Vec<CaptureEntry>) -> Self {
+    pub fn new(
+        name: String,
+        repeats: u64,
+        delay: Duration,
+        captures: Vec<CaptureEntry>,
+        operations: Vec<OnEntry>,
+    ) -> Self {
         Self {
             id: uuid::Uuid::new_v4(),
             name,
             repeats,
             delay,
             captures,
+            operations,
         }
     }
 }
@@ -112,30 +120,22 @@ impl ExecutionResponse {
 
 impl From<Bytes> for ExecutionResponse {
     fn from(body: Bytes) -> Self {
-        Self::new(
-            body,
-            CaptureValue::Nil,
-            Duration::default(),
-        )
+        Self::new(body, CaptureValue::Nil, Duration::default())
     }
 }
 
 impl From<CaptureValue> for ExecutionResponse {
     fn from(additional: CaptureValue) -> Self {
-        Self::new(
-            Bytes::default(),
-            additional,
-            Duration::default(),
-        )
+        Self::new(Bytes::default(), additional, Duration::default())
     }
 }
 
 pub trait JobExecutionHooks<T, R> {
-    fn before(&self, context: &mut Context) -> Result<String, String>;
-    fn after(&self, context: &mut Context) -> Result<String, String>;
+    fn before(&self, context: &Context) -> Result<String, String>;
+    fn after(&self, context: &Context) -> Result<String, String>;
     fn execute(
         &self,
-        context: &mut Context,
+        context: &Context,
         sender: &impl SendMessage<T, R>,
     ) -> Result<ExecutionResponse, Error>;
 }
