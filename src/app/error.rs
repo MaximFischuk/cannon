@@ -3,7 +3,7 @@ use std::iter::repeat;
 
 /// An error that occurred during parsing or compiling a regular expression.
 #[derive(Clone, PartialEq)]
-#[non_exhaustive] 
+#[non_exhaustive]
 pub enum Error {
     AssertationFailed(String),
     ValueNotFound(String),
