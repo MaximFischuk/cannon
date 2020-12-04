@@ -98,6 +98,14 @@ pub struct CaptureEntry {
     pub on: Vec<Functor>,
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Operation {
+    Add(String, liquid::model::Value),
+    PushCsv(String, PathBuf),
+    Console(String),
+}
+
 #[derive(Debug, Deserialize, Default)]
 pub struct Manifest {
     pub name: String,
@@ -114,7 +122,8 @@ pub struct Manifest {
 pub struct Pipeline {
     pub before_all: Option<Code>,
     pub after_all: Option<Code>,
-    pub test: Vec<PipelineEntry>,
+    #[serde(flatten)]
+    pub groups: HashMap<String, Vec<PipelineEntry>>,
 }
 
 // TODO: make unified or variant pipeline entry to support multiple client providers
@@ -134,6 +143,8 @@ pub struct PipelineEntry {
     pub vars: Object,
     #[serde(default)]
     pub capture: Vec<CaptureEntry>,
+    #[serde(default)]
+    pub on: Vec<Operation>,
     #[serde(with = "crate::configuration::deserialize::duration")]
     #[serde(default)]
     pub delay: Duration,

@@ -39,32 +39,43 @@ use self::{
     configuration::manifest::Manifest,
 };
 
-fn main() {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let options = Opt::from_args();
-    let signals = Signals::new(&[SIGINT]).unwrap();
 
-    thread::spawn(move || {
-        for sig in signals.forever() {
-            info!("Received signal {:?}, stopping", sig);
-            exit(0);
-        }
-    });
-
-    let manifest = Manifest::from(options.file);
-
-    init_logging(
-        options.logging.unwrap_or(LogLevel::Info).into(),
-        &options.log_output_file,
-    );
-
-    match manifest {
-        Ok(manifest) => {
-            debug!("Initiated configuration {:#?}", manifest);
-            let app = App::new(manifest);
-            app.run();
-        }
-        Err(e) => error!("Failed to load manifest file configuration {}", e),
+    let mut builder = tokio::runtime::Builder::new_multi_thread();
+    if let Some(threads) = options.threads {
+        builder.worker_threads(threads);
     }
+    builder.enable_all()
+        .build()
+        .unwrap()
+        .block_on(async {
+            let signals = Signals::new(&[SIGINT]).unwrap();
+
+            thread::spawn(move || {
+                for sig in signals.forever() {
+                    info!("Received signal {:?}, stopping", sig);
+                    exit(0);
+                }
+            });
+
+            let manifest = Manifest::from(options.file);
+
+            init_logging(
+                options.logging.unwrap_or(LogLevel::Info).into(),
+                &options.log_output_file,
+            );
+
+            match manifest {
+                Ok(manifest) => {
+                    debug!("Initiated configuration {:#?}", manifest);
+                    let app = App::new(manifest, options.groups);
+                    app.run().await;
+                }
+                Err(e) => error!("Failed to load manifest file configuration {}", e),
+            }
+            Ok(())
+        })
 }
 
 fn init_logging(level: LevelFilter, output: &Option<PathBuf>) {

@@ -66,7 +66,7 @@ impl JobExecutionHooks<HttpRequest<Vec<u8>>, Result<HttpResponse<Bytes>, Error>>
             Ok(response) => {
                 let elapsed = now.elapsed();
                 let body = response.body();
-                info!(
+                debug!(
                     "Received response {:#?} body {:#?} in {} ms",
                     response,
                     body,

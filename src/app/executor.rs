@@ -4,7 +4,7 @@ use crate::app::hooks::Executable;
 use crate::app::hooks::ExecutionResult;
 use crate::configuration::manifest::CaptureEntry;
 use crate::connection::SendMessage;
-use crate::{app::capture::CaptureValue, configuration::manifest::OnEntry};
+use crate::{app::capture::CaptureValue, configuration::manifest::Operation};
 use bytes::Bytes;
 use core::slice::Iter;
 use std::time::Duration;
@@ -20,7 +20,7 @@ pub(crate) struct RunInfo {
     pub repeats: u64,
     pub delay: Duration,
     pub captures: Vec<CaptureEntry>,
-    pub operations: Vec<OnEntry>,
+    pub operations: Vec<Operation>,
 }
 
 #[derive(Builder)]
@@ -36,7 +36,7 @@ impl RunInfo {
         repeats: u64,
         delay: Duration,
         captures: Vec<CaptureEntry>,
-        operations: Vec<OnEntry>,
+        operations: Vec<Operation>,
     ) -> Self {
         Self {
             id: uuid::Uuid::new_v4(),

@@ -25,6 +25,14 @@ pub struct Opt {
     /// FIle to which application will write logs
     #[structopt(long, short = "O", env = "LOG_OUTPUT_FILE")]
     pub log_output_file: Option<PathBuf>,
+
+    /// Amount of parallel threads of worker groups
+    #[structopt(long, short = "t")]
+    pub threads: Option<usize>,
+
+    /// Run only defined groups, any other will be ignored
+    #[structopt(long, short = "g")]
+    pub groups: Vec<String>,
 }
 
 impl Into<LevelFilter> for LogLevel {
