@@ -1,4 +1,4 @@
-use crate::app::error::Error as ExecutionError;
+use crate::{app::error::Error as ExecutionError, configuration::manifest::JobType};
 use crate::app::executor::ExecutionResponse;
 use crate::app::Context;
 use crate::app::JobExecutionHooks;
@@ -24,11 +24,15 @@ pub struct HttpJob {
 
 impl From<&PipelineEntry> for HttpJob {
     fn from(entry: &PipelineEntry) -> Self {
-        Self {
-            request: entry.request.clone(),
-            method: entry.method.clone(),
-            headers: entry.headers.clone(),
-            body: entry.body.clone().map(Into::into),
+        match &entry.job_type {
+            JobType::Http {request, method, headers, body} => {
+                Self {
+                    request: request.clone(),
+                    method: method.clone(),
+                    headers: headers.clone(),
+                    body: body.clone().map(Into::into),
+                }
+            }
         }
     }
 }

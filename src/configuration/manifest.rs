@@ -126,19 +126,28 @@ pub struct Pipeline {
     pub groups: HashMap<String, Vec<PipelineEntry>>,
 }
 
-// TODO: make unified or variant pipeline entry to support multiple client providers
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "lowercase")]
+#[serde(untagged)]
+pub enum JobType {
+    Http {
+        request: String,
+        #[serde(with = "crate::configuration::deserialize::http_method")]
+        #[serde(default)]
+        method: Method,
+        body: Option<BodyEntry>,
+        #[serde(default)]
+        headers: HashMap<String, String>,
+    }
+}
+
 #[derive(Debug, Deserialize)]
 pub struct PipelineEntry {
     pub before: Option<Code>,
     pub after: Option<Code>,
     pub name: String,
-    pub request: String,
-    #[serde(with = "crate::configuration::deserialize::http_method")]
-    #[serde(default)]
-    pub method: Method,
-    pub body: Option<BodyEntry>,
-    #[serde(default)]
-    pub headers: HashMap<String, String>,
+    #[serde(flatten)]
+    pub job_type: JobType,
     #[serde(default)]
     pub vars: Object,
     #[serde(default)]
