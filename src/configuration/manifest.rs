@@ -45,9 +45,16 @@ pub enum BodyEntry {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ResourceType {
+    File(PathBuf),
+}
+
+#[derive(Debug, Deserialize)]
 pub struct Resource {
-    #[serde(with = "crate::configuration::deserialize::uri")]
-    pub uri: Uri,
+    #[serde(flatten)]
+    pub r#type: ResourceType,
+    pub name: String,
 }
 
 #[derive(Deserialize, Derivative)]
@@ -121,7 +128,7 @@ pub struct Manifest {
     pub vars: Object,
 
     #[serde(default)]
-    pub resources: Vec<PathBuf>,
+    pub resources: Vec<Resource>,
 }
 
 #[derive(Debug, Deserialize, Default)]

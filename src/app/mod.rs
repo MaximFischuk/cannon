@@ -7,7 +7,7 @@ pub(crate) mod hooks;
 pub(crate) mod job;
 pub(crate) mod operation;
 
-use crate::app::assert::Assertable;
+use crate::{app::assert::Assertable, configuration::manifest::ResourceType};
 use crate::app::capture::Capturable;
 use crate::app::capture::CaptureValue;
 use crate::app::context::Context;
@@ -73,9 +73,12 @@ impl App {
             groups.push(JobGroup::new(group_name, http_jobs));
         }
         for resource in manifest.resources {
-            let path: Box<Path> = resource.try_into().unwrap();
-            let name = path.file_stem().unwrap().to_str().unwrap().to_owned();
-            context.push_resource_file(name, path);
+            match resource.r#type {
+                ResourceType::File(path) => {
+                    let path: Box<Path> = path.try_into().unwrap();
+                    context.push_resource_file(resource.name, path);
+                }
+            }
         }
         App {
             client: Arc::new(client),
