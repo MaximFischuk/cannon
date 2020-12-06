@@ -71,12 +71,13 @@ impl ContextPool {
         self.resources.insert(name, path);
     }
 
-    pub fn push_contextual_vars<T>(&mut self, iter: T, local_id: uuid::Uuid)
+    pub fn push_contextual_vars<T, S>(&mut self, iter: T, local_id: S)
     where
         T: IntoIterator<Item = (KString, CaptureValue)>,
+        S: ToString
     {
         let object = Object::from_iter(iter);
-        let key = local_id.to_simple().to_string().into();
+        let key = local_id.to_string().into();
         self.contextual.insert(key, CaptureValue::from(object));
     }
 
@@ -86,9 +87,12 @@ impl ContextPool {
         self.new_context(uuid::Uuid::default())
     }
 
-    pub fn new_context(&self, local_id: uuid::Uuid) -> Context {
+    pub fn new_context<S>(&self, local_id: S) -> Context
+    where
+        S: ToString
+    {
         let mut contextual_vars = self.globals.clone();
-        let key: KString = local_id.to_simple().to_string().into();
+        let key: KString = local_id.to_string().into();
         if let Some(value) = self.contextual.get(&key) {
             let local = value.clone().into_object().unwrap();
             contextual_vars.extend(local);
@@ -111,10 +115,13 @@ impl ContextPool {
         }
     }
 
-    pub fn merge(&mut self, context: Context, group_name: &str) {
+    pub fn merge<S>(&mut self, context: Context, local_id: S)
+    where
+        S: ToString
+    {
         let vars = context.variables;
         self.globals
-            .insert(KString::from_ref(group_name), Value::from(vars));
+            .insert(KString::from_string(local_id.to_string()), Value::from(vars));
     }
 }
 

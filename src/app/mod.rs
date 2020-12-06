@@ -153,7 +153,7 @@ impl App {
                         }
                     }
                     let mut locked_context = lock!(context);
-                    locked_context.merge(local_context, jobs_group.name().as_ref());
+                    locked_context.merge(local_context, jobs_group.name());
                     drop(locked_context);
                     // job.after(locked_context);
                 }
