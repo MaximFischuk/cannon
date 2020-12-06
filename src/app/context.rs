@@ -110,6 +110,12 @@ impl ContextPool {
             records,
         }
     }
+
+    pub fn merge(&mut self, context: Context, group_name: &str) {
+        let vars = context.variables;
+        self.globals
+            .insert(KString::from_ref(group_name), Value::from(vars));
+    }
 }
 
 impl Context {
@@ -163,7 +169,7 @@ impl Context {
 
 #[cfg(test)]
 mod test {
-  
+
     use super::ContextPool;
     use crate::app::CaptureValue;
 

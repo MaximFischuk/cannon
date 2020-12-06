@@ -93,8 +93,10 @@ pub enum Functor {
 pub struct CaptureEntry {
     #[serde(flatten)]
     pub cap: Capture,
+
     #[serde(rename = "as")]
     pub variable: String,
+
     pub on: Vec<Functor>,
 }
 
@@ -109,11 +111,15 @@ pub enum Operation {
 #[derive(Debug, Deserialize, Default)]
 pub struct Manifest {
     pub name: String,
+
     #[serde(with = "crate::configuration::deserialize::uri")]
     pub collect: Uri,
+
     pub pipeline: Pipeline,
+
     #[serde(default)]
     pub vars: Object,
+
     #[serde(default)]
     pub resources: Vec<PathBuf>,
 }
@@ -121,7 +127,9 @@ pub struct Manifest {
 #[derive(Debug, Deserialize, Default)]
 pub struct Pipeline {
     pub before_all: Option<Code>,
+
     pub after_all: Option<Code>,
+
     #[serde(flatten)]
     pub groups: HashMap<String, Vec<PipelineEntry>>,
 }
@@ -132,31 +140,42 @@ pub struct Pipeline {
 pub enum JobType {
     Http {
         request: String,
+
         #[serde(with = "crate::configuration::deserialize::http_method")]
         #[serde(default)]
         method: Method,
+
         body: Option<BodyEntry>,
+
         #[serde(default)]
         headers: HashMap<String, String>,
-    }
+    },
 }
 
 #[derive(Debug, Deserialize)]
 pub struct PipelineEntry {
     pub before: Option<Code>,
+
     pub after: Option<Code>,
+
     pub name: String,
+
     #[serde(flatten)]
     pub job_type: JobType,
+
     #[serde(default)]
     pub vars: Object,
+
     #[serde(default)]
     pub capture: Vec<CaptureEntry>,
+
     #[serde(default)]
     pub on: Vec<Operation>,
+
     #[serde(with = "crate::configuration::deserialize::duration")]
     #[serde(default)]
     pub delay: Duration,
+
     #[serde(default = "default_repeats")]
     pub repeats: u64,
     // pub vars: HashMap<String, VarEntry>,

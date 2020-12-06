@@ -7,6 +7,7 @@ pub(crate) mod hooks;
 pub(crate) mod job;
 pub(crate) mod operation;
 
+use crate::app::assert::Assertable;
 use crate::app::capture::Capturable;
 use crate::app::capture::CaptureValue;
 use crate::app::context::Context;
@@ -16,7 +17,6 @@ use crate::app::executor::JobGroup;
 use crate::app::executor::RunInfo;
 use crate::app::job::HttpJob;
 use crate::configuration::manifest::Manifest;
-use crate::app::assert::Assertable;
 use liquid::Object;
 use reqwest::blocking::Client;
 use std::convert::TryInto;
@@ -106,7 +106,6 @@ impl App {
                     drop(locked_context);
                     for i in 0..info.repeats {
                         debug!("Iteration {}", i);
-                        let mut exported = Object::default();
                         if info.delay.gt(&Duration::default()) {
                             sleep(info.delay);
                         }
@@ -119,6 +118,7 @@ impl App {
                             info.id,
                             now.elapsed().as_millis()
                         );
+                        let mut exported = Object::default();
                         match result {
                             Ok(body) => {
                                 for entry in &info.captures {
@@ -143,12 +143,15 @@ impl App {
                         }
                         local_context.push_vars(exported.clone());
                         for operation in &info.operations {
-                            operation.perform(&mut local_context).unwrap();
+                            match operation.perform(&mut local_context) {
+                                Ok(()) => {}
+                                Err(e) => error!("{:#?}", e),
+                            }
                         }
-                        let mut locked_context = lock!(context);
-                        locked_context.push_vars(exported);
-                        drop(locked_context);
                     }
+                    let mut locked_context = lock!(context);
+                    locked_context.merge(local_context, jobs_group.name().as_ref());
+                    drop(locked_context);
                     // job.after(locked_context);
                 }
                 sender.send(jobs_group.name()).await.unwrap();
