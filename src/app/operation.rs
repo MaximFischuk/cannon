@@ -1,5 +1,6 @@
 use super::{capture::Resolvable, context::Context, error::Error};
 use crate::configuration::manifest::{AssertParamValueVar, Operation};
+use kstring::KString;
 use liquid::{model::Value, Object};
 use std::{
     fs::OpenOptions,
@@ -40,7 +41,17 @@ impl Performable for Operation {
                                 .unwrap()
                         });
                     }
-                    Value::Object(values) => unimplemented!(),
+                    Value::Object(values) => {
+                        if !exists {
+                            let keys: Vec<&str> = values.keys().map(KString::as_str).collect();
+                            wtr.write_record(&keys).unwrap();
+                        }
+                        let values = values.values();
+                        values.for_each(|v| {
+                            wtr.write_record(&vec![v.clone().into_scalar().unwrap().into_string()])
+                                .unwrap()
+                        });
+                    }
                     Value::Scalar(value) => {
                         if !exists {
                             wtr.write_record(&vec![variable.as_str()]).unwrap();
