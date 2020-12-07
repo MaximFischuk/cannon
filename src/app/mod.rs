@@ -7,8 +7,6 @@ pub(crate) mod hooks;
 pub(crate) mod job;
 pub(crate) mod operation;
 
-use crate::{app::assert::Assertable, configuration::manifest::ResourceType};
-use crate::app::capture::Capturable;
 use crate::app::capture::CaptureValue;
 use crate::app::context::Context;
 use crate::app::context::ContextPool;
@@ -17,6 +15,8 @@ use crate::app::executor::JobGroup;
 use crate::app::executor::RunInfo;
 use crate::app::job::HttpJob;
 use crate::configuration::manifest::Manifest;
+use crate::{app::assert::Assertable, configuration::manifest::ResourceType};
+use crate::{app::capture::Capturable, configuration::manifest::JobType};
 use liquid::Object;
 use reqwest::blocking::Client;
 use std::convert::TryInto;
@@ -40,8 +40,7 @@ macro_rules! lock {
 
 pub struct App {
     name: String,
-    job_groups: Vec<JobGroup<HttpJob>>,
-    client: Arc<Client>,
+    job_groups: Vec<JobGroup<Box<dyn JobExecutionHooks + Send + Sync>>>,
     context: Arc<Mutex<ContextPool>>,
 }
 
@@ -51,15 +50,15 @@ impl App {
             .timeout(Duration::from_secs(10))
             .build()
             .unwrap();
+        let client = Arc::new(client);
         let mut context = ContextPool::with_vars(manifest.vars);
         let mut groups = Vec::new();
         for (group_name, job_list) in manifest.pipeline.groups {
             if !only.is_empty() && !only.contains(&group_name) {
                 continue;
             }
-            let mut http_jobs = vec![];
+            let mut http_jobs: Vec<(Box<dyn JobExecutionHooks + Send + Sync>, RunInfo)> = vec![];
             for entry in job_list {
-                let job = HttpJob::from(&entry);
                 let info = RunInfo::new(
                     entry.name,
                     entry.repeats,
@@ -68,7 +67,23 @@ impl App {
                     entry.on,
                 );
                 context.push_contextual_vars(entry.vars, info.id);
-                http_jobs.push((job, info));
+                match entry.job_type {
+                    JobType::Http {
+                        request,
+                        method,
+                        headers,
+                        body,
+                    } => {
+                        let job = HttpJob::new(
+                            request,
+                            method,
+                            headers,
+                            body.map(Into::into),
+                            client.clone(),
+                        );
+                        http_jobs.push((Box::new(job), info));
+                    }
+                }
             }
             groups.push(JobGroup::new(group_name, http_jobs));
         }
@@ -81,7 +96,6 @@ impl App {
             }
         }
         App {
-            client: Arc::new(client),
             name: manifest.name,
             job_groups: groups,
             context: Arc::new(Mutex::new(context)),
@@ -95,7 +109,6 @@ impl App {
         let (tx, mut rx) = mpsc::channel(100);
         for jobs_group in groups {
             let context = self.context.clone();
-            let client = self.client.clone();
             let sender = tx.clone();
             tokio::spawn(async move {
                 info!(
@@ -115,7 +128,7 @@ impl App {
                         local_context.next();
                         // job.before(locked_context);
                         let now = Instant::now();
-                        let result = job.execute(&local_context, client.as_ref());
+                        let result = job.execute(&local_context);
                         debug!(
                             "Elapsed for execution of test({}), {:?} ms",
                             info.id,

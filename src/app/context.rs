@@ -74,7 +74,7 @@ impl ContextPool {
     pub fn push_contextual_vars<T, S>(&mut self, iter: T, local_id: S)
     where
         T: IntoIterator<Item = (KString, CaptureValue)>,
-        S: ToString
+        S: ToString,
     {
         let object = Object::from_iter(iter);
         let key = local_id.to_string().into();
@@ -89,7 +89,7 @@ impl ContextPool {
 
     pub fn new_context<S>(&self, local_id: S) -> Context
     where
-        S: ToString
+        S: ToString,
     {
         let mut contextual_vars = self.globals.clone();
         let key: KString = local_id.to_string().into();
@@ -117,11 +117,13 @@ impl ContextPool {
 
     pub fn merge<S>(&mut self, context: Context, local_id: S)
     where
-        S: ToString
+        S: ToString,
     {
         let vars = context.variables;
-        self.globals
-            .insert(KString::from_string(local_id.to_string()), Value::from(vars));
+        self.globals.insert(
+            KString::from_string(local_id.to_string()),
+            Value::from(vars),
+        );
     }
 }
 

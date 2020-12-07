@@ -1,57 +1,62 @@
+use crate::app::error::Error as ExecutionError;
 use crate::app::executor::ExecutionResponse;
 use crate::app::Context;
 use crate::app::JobExecutionHooks;
-use crate::configuration::manifest::PipelineEntry;
 use crate::connection::SendMessage;
-use crate::{app::error::Error as ExecutionError, configuration::manifest::JobType};
 use bytes::Buf as BytesBuf;
 use bytes::Bytes;
 use http::Request as HttpRequest;
 use http::Response as HttpResponse;
 use reqwest::Error;
 use reqwest::Method;
-use std::collections::HashMap;
 use std::time::Instant;
+use std::{collections::HashMap, sync::Arc};
 
 use super::capture::Convert;
 
-pub struct HttpJob {
+pub struct HttpJob<T>
+where
+    T: SendMessage<HttpRequest<Vec<u8>>, Result<HttpResponse<Bytes>, Error>>,
+{
     request: String,
     method: Method,
     headers: HashMap<String, String>,
     body: Option<Bytes>,
+    client: Arc<T>,
 }
 
-impl From<&PipelineEntry> for HttpJob {
-    fn from(entry: &PipelineEntry) -> Self {
-        match &entry.job_type {
-            JobType::Http {
-                request,
-                method,
-                headers,
-                body,
-            } => Self {
-                request: request.clone(),
-                method: method.clone(),
-                headers: headers.clone(),
-                body: body.clone().map(Into::into),
-            },
+impl<T> HttpJob<T>
+where
+    T: SendMessage<HttpRequest<Vec<u8>>, Result<HttpResponse<Bytes>, Error>>,
+{
+    pub fn new(
+        request: String,
+        method: Method,
+        headers: HashMap<String, String>,
+        body: Option<Bytes>,
+        client: Arc<T>,
+    ) -> HttpJob<T> {
+        Self {
+            request,
+            method,
+            headers,
+            body,
+            client,
         }
     }
 }
 
-impl JobExecutionHooks<HttpRequest<Vec<u8>>, Result<HttpResponse<Bytes>, Error>> for HttpJob {
+impl<T> JobExecutionHooks for HttpJob<T>
+where
+    T: SendMessage<HttpRequest<Vec<u8>>, Result<HttpResponse<Bytes>, Error>>,
+{
     fn before(&self, _context: &Context) -> Result<String, String> {
         todo!()
     }
     fn after(&self, _context: &Context) -> Result<String, String> {
         todo!()
     }
-    fn execute(
-        &self,
-        context: &Context,
-        sender: &impl SendMessage<HttpRequest<Vec<u8>>, Result<HttpResponse<Bytes>, Error>>,
-    ) -> Result<ExecutionResponse, ExecutionError> {
+    fn execute(&self, context: &Context) -> Result<ExecutionResponse, ExecutionError> {
         let mut request = HttpRequest::builder()
             .uri(context.apply(&self.request))
             .method(&self.method);
@@ -69,7 +74,7 @@ impl JobExecutionHooks<HttpRequest<Vec<u8>>, Result<HttpResponse<Bytes>, Error>>
             prepared = request.body(Vec::default()).expect("Cannot create request");
         }
         let now = Instant::now();
-        match sender.send(prepared) {
+        match self.client.send(prepared) {
             Ok(response) => {
                 let elapsed = now.elapsed();
                 let body = response.body();

@@ -3,7 +3,6 @@ use crate::app::error::Error;
 use crate::app::hooks::Executable;
 use crate::app::hooks::ExecutionResult;
 use crate::configuration::manifest::CaptureEntry;
-use crate::connection::SendMessage;
 use crate::{app::capture::CaptureValue, configuration::manifest::Operation};
 use bytes::Bytes;
 use core::slice::Iter;
@@ -130,12 +129,8 @@ impl From<CaptureValue> for ExecutionResponse {
     }
 }
 
-pub trait JobExecutionHooks<T, R> {
+pub trait JobExecutionHooks {
     fn before(&self, context: &Context) -> Result<String, String>;
     fn after(&self, context: &Context) -> Result<String, String>;
-    fn execute(
-        &self,
-        context: &Context,
-        sender: &impl SendMessage<T, R>,
-    ) -> Result<ExecutionResponse, Error>;
+    fn execute(&self, context: &Context) -> Result<ExecutionResponse, Error>;
 }
