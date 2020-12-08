@@ -1,4 +1,4 @@
-use crate::app::error::Error as ExecutionError;
+use crate::{app::error::Error as ExecutionError, map};
 use crate::app::executor::ExecutionResponse;
 use crate::app::Context;
 use crate::app::JobExecutionHooks;
@@ -13,6 +13,8 @@ use std::time::Instant;
 use std::{collections::HashMap, sync::Arc};
 
 use super::capture::Convert;
+
+const HEADERS_KEY: &'static str = "headers";
 
 pub struct HttpJob<T>
 where
@@ -87,7 +89,7 @@ where
                 let result = ExecutionResponse::builder()
                     .body(response.body().clone())
                     .execution_time(elapsed)
-                    .additional(response.headers().convert())
+                    .additional(map!{ HEADERS_KEY.to_owned() => response.headers().convert() })
                     .build();
                 result.map_err(ExecutionError::Internal)
             }

@@ -6,7 +6,7 @@ use crate::configuration::manifest::CaptureEntry;
 use crate::{app::capture::CaptureValue, configuration::manifest::Operation};
 use bytes::Bytes;
 use core::slice::Iter;
-use std::time::Duration;
+use std::{collections::HashMap, time::Duration};
 
 pub(crate) struct JobGroup<T> {
     name: String,
@@ -25,7 +25,7 @@ pub(crate) struct RunInfo {
 #[derive(Builder)]
 pub struct ExecutionResponse {
     body: Bytes,
-    additional: CaptureValue,
+    additional: HashMap<String, CaptureValue>,
     execution_time: Duration,
 }
 
@@ -92,7 +92,7 @@ impl<T> Executable for JobGroup<T> {
 }
 
 impl ExecutionResponse {
-    pub fn new(body: Bytes, additional: CaptureValue, execution_time: Duration) -> Self {
+    pub fn new(body: Bytes, additional: HashMap<String, CaptureValue>, execution_time: Duration) -> Self {
         Self {
             body,
             additional,
@@ -104,7 +104,7 @@ impl ExecutionResponse {
         &self.body
     }
 
-    pub fn additional(&self) -> &CaptureValue {
+    pub fn additional(&self) -> &HashMap<String, CaptureValue> {
         &self.additional
     }
 
@@ -117,17 +117,17 @@ impl ExecutionResponse {
     }
 }
 
-impl From<Bytes> for ExecutionResponse {
-    fn from(body: Bytes) -> Self {
-        Self::new(body, CaptureValue::Nil, Duration::default())
-    }
-}
+// impl From<Bytes> for ExecutionResponse {
+//     fn from(body: Bytes) -> Self {
+//         Self::new(body, CaptureValue::Nil, Duration::default())
+//     }
+// }
 
-impl From<CaptureValue> for ExecutionResponse {
-    fn from(additional: CaptureValue) -> Self {
-        Self::new(Bytes::default(), additional, Duration::default())
-    }
-}
+// impl From<CaptureValue> for ExecutionResponse {
+//     fn from(additional: CaptureValue) -> Self {
+//         Self::new(Bytes::default(), additional, Duration::default())
+//     }
+// }
 
 pub trait JobExecutionHooks {
     fn before(&self, context: &Context) -> Result<String, String>;

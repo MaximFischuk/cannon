@@ -7,10 +7,6 @@ use reqwest::blocking::Request;
 use reqwest::Error as RequestError;
 use std::convert::TryFrom;
 
-pub(crate) struct HttpConnection {
-    client: Client,
-}
-
 impl SendMessage<HttpRequest<Vec<u8>>, Result<HttpResponse<Bytes>, RequestError>> for Client {
     fn send(&self, data: HttpRequest<Vec<u8>>) -> Result<HttpResponse<Bytes>, RequestError> {
         let req: Request = Request::try_from(data)?;
