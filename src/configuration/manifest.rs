@@ -103,8 +103,6 @@ pub struct CaptureEntry {
 
     #[serde(rename = "as")]
     pub variable: String,
-
-    pub on: Vec<Functor>,
 }
 
 #[derive(Debug, Deserialize)]

@@ -15,7 +15,7 @@ use crate::app::executor::JobGroup;
 use crate::app::executor::RunInfo;
 use crate::app::job::HttpJob;
 use crate::configuration::manifest::Manifest;
-use crate::{app::assert::Assertable, configuration::manifest::ResourceType};
+use crate::configuration::manifest::ResourceType;
 use crate::{app::capture::Capturable, configuration::manifest::JobType};
 use liquid::Object;
 use reqwest::blocking::Client;
@@ -138,15 +138,9 @@ impl App {
                         match result {
                             Ok(body) => {
                                 for entry in &info.captures {
-                                    let mut assert_result: bool = true;
                                     let value = entry.cap.capture(&local_context, body.body());
-                                    for functor in &entry.on {
-                                        assert_result &= functor.assert(&local_context, &value);
-                                    }
                                     debug!("Captured value: {:?}", value);
-                                    if assert_result {
-                                        exported.insert(entry.variable.clone().into(), value);
-                                    }
+                                    exported.insert(entry.variable.clone().into(), value);
                                 }
                                 debug!(
                                     "Finished job '{}'({}) in {} ms",
