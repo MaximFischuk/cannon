@@ -3,7 +3,10 @@ use csv::{Reader, StringRecordsIntoIter};
 use derivative::*;
 use kstring::KString;
 use liquid::Parser;
-use liquid::{model::{find::Path as CapturePath, Value}, Object};
+use liquid::{
+    model::{find::Path as CapturePath, Value},
+    Object,
+};
 use std::fs::File;
 use std::iter::FromIterator;
 use std::sync::Arc;

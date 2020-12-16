@@ -6,7 +6,7 @@ use jsonpath::Selector;
 use liquid::Object;
 use regex::Regex;
 use reqwest::Method;
-use serde::{Deserializer, export::fmt::Debug};
+use serde::{export::fmt::Debug, Deserializer};
 use serde_derive::Deserialize;
 use serde_json::Value;
 use std::collections::HashMap;
@@ -232,7 +232,7 @@ fn default_repeats() -> u64 {
     1
 }
 
-impl <'de> serde::de::Deserialize<'de> for Variable {
+impl<'de> serde::de::Deserialize<'de> for Variable {
     fn deserialize<D>(deserializer: D) -> Result<Variable, D::Error>
     where
         D: Deserializer<'de>,

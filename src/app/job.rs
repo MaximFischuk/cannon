@@ -1,8 +1,8 @@
-use crate::{app::error::Error as ExecutionError, map};
 use crate::app::executor::ExecutionResponse;
 use crate::app::Context;
 use crate::app::JobExecutionHooks;
 use crate::connection::SendMessage;
+use crate::{app::error::Error as ExecutionError, map};
 use bytes::Buf as BytesBuf;
 use bytes::Bytes;
 use http::Request as HttpRequest;
@@ -89,7 +89,7 @@ where
                 let result = ExecutionResponse::builder()
                     .body(response.body().clone())
                     .execution_time(elapsed)
-                    .additional(map!{ HEADERS_KEY.to_owned() => response.headers().convert() })
+                    .additional(map! { HEADERS_KEY.to_owned() => response.headers().convert() })
                     .build();
                 result.map_err(ExecutionError::Internal)
             }

@@ -1,7 +1,7 @@
 use crate::app::context::Context;
-use crate::configuration::manifest::Variable;
 use crate::configuration::manifest::Capture;
 use crate::configuration::manifest::CaptureEntry;
+use crate::configuration::manifest::Variable;
 use bytes::Bytes;
 use http::{HeaderMap, HeaderValue};
 use liquid::Object;

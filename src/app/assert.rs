@@ -29,12 +29,14 @@ impl Assertable<CaptureValue> for AssertFunction {
                 }
             },
             AssertFunction::Matches(var, regex) => match var.resolve(ctx) {
-                Ok(CaptureValue::Scalar(expected)) => regex.is_match(expected.into_string().as_str()),
+                Ok(CaptureValue::Scalar(expected)) => {
+                    regex.is_match(expected.into_string().as_str())
+                }
                 Err(e) => {
                     error!("{}", e);
                     false
                 }
-                _ => false
+                _ => false,
             },
         }
     }
@@ -43,7 +45,7 @@ impl Assertable<CaptureValue> for AssertFunction {
 #[cfg(test)]
 mod test {
 
-    use std::iter::{FromIterator, once};
+    use std::iter::{once, FromIterator};
 
     use liquid::Object;
 
@@ -53,13 +55,10 @@ mod test {
     #[test]
     fn test_value_equals_to_expexted_value() {
         let value = CaptureValue::Scalar(liquid::model::scalar::Scalar::new(42));
-        let assert_function = AssertFunction::Equal(Variable::Value(
-            CaptureValue::Scalar(liquid::model::scalar::Scalar::new(42)),
-        ));
-        let result = assert_function.assert(
-            &ContextPool::new().default_context(),
-            &value,
-        );
+        let assert_function = AssertFunction::Equal(Variable::Value(CaptureValue::Scalar(
+            liquid::model::scalar::Scalar::new(42),
+        )));
+        let result = assert_function.assert(&ContextPool::new().default_context(), &value);
 
         assert!(result);
     }
@@ -79,13 +78,10 @@ mod test {
     #[test]
     fn test_value_not_equals_to_expexted_value() {
         let value = CaptureValue::Scalar(liquid::model::scalar::Scalar::new(42));
-        let assert_function = AssertFunction::NotEqual(Variable::Value(
-            CaptureValue::Scalar(liquid::model::scalar::Scalar::new(43)),
-        ));
-        let result = assert_function.assert(
-            &ContextPool::new().default_context(),
-            &value,
-        );
+        let assert_function = AssertFunction::NotEqual(Variable::Value(CaptureValue::Scalar(
+            liquid::model::scalar::Scalar::new(43),
+        )));
+        let result = assert_function.assert(&ContextPool::new().default_context(), &value);
 
         assert!(result);
     }
@@ -108,9 +104,11 @@ mod test {
         let expected = CaptureValue::Scalar(liquid::model::scalar::Scalar::new(42));
         let value = expected.clone();
         let object = Object::from_iter(once(("value".into(), value)));
-        let assert_function = AssertFunction::Equal(Variable::Path(vec!["expect".into(), "value".into()]));
+        let assert_function =
+            AssertFunction::Equal(Variable::Path(vec!["expect".into(), "value".into()]));
         let result = assert_function.assert(
-            &ContextPool::with_vars(vec![("expect".into(), CaptureValue::from(object))]).default_context(),
+            &ContextPool::with_vars(vec![("expect".into(), CaptureValue::from(object))])
+                .default_context(),
             &expected,
         );
 
