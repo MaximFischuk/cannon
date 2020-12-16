@@ -1,5 +1,5 @@
 use crate::app::context::Context;
-use crate::configuration::manifest::AssertParamValueVar;
+use crate::configuration::manifest::Variable;
 use crate::configuration::manifest::Capture;
 use crate::configuration::manifest::CaptureEntry;
 use bytes::Bytes;
@@ -145,14 +145,18 @@ impl Capturable<String> for Capture {
     }
 }
 
-impl Resolvable for AssertParamValueVar {
+impl Resolvable for Variable {
     fn resolve(&self, ctx: &Context) -> Result<CaptureValue, String> {
         match self {
-            AssertParamValueVar::Value(object) => Ok(object.clone()),
-            AssertParamValueVar::Var(var_name) => match ctx.find(var_name) {
-                Some(value) => Ok(value),
-                None => Err("Value not found".to_owned()),
-            },
+            Variable::Value(object) => Ok(object.clone()),
+            Variable::Template(var_name) => Ok(CaptureValue::scalar(ctx.apply(var_name))),
+            Variable::Path(path) => {
+                let mut path_ob = liquid::model::find::Path::with_index(path[0].as_str());
+                for i in 1..path.len() {
+                    path_ob.push(path[i].as_str());
+                }
+                ctx.find_path(path_ob).ok_or("Not found".to_string())
+            }
         }
     }
 }

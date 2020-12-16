@@ -1,5 +1,5 @@
 use super::{capture::Resolvable, context::Context, error::Error};
-use crate::configuration::manifest::{AssertParamValueVar, Operation};
+use crate::configuration::manifest::{Variable, Operation};
 use kstring::KString;
 use liquid::{model::Value, Object};
 use std::{
@@ -16,7 +16,7 @@ impl Performable for Operation {
     fn perform(&self, ctx: &mut Context) -> Result<(), Error> {
         match self {
             Operation::Add(variable, arg) => {
-                let var = AssertParamValueVar::Var(variable.clone())
+                let var = Variable::Template(variable.clone())
                     .resolve(&ctx)
                     .unwrap();
                 let value = arg.clone().into_scalar().unwrap().to_integer().unwrap();
@@ -26,7 +26,7 @@ impl Performable for Operation {
                 ctx.push_vars(exported.clone());
             }
             Operation::PushCsv(variable, path) => {
-                let var = AssertParamValueVar::Var(variable.clone())
+                let var = Variable::Template(variable.clone())
                     .resolve(&ctx)
                     .unwrap();
                 let exists = path.as_path().exists();

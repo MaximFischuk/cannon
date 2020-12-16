@@ -92,14 +92,6 @@ impl<T> Executable for JobGroup<T> {
 }
 
 impl ExecutionResponse {
-    pub fn new(body: Bytes, additional: HashMap<String, CaptureValue>, execution_time: Duration) -> Self {
-        Self {
-            body,
-            additional,
-            execution_time,
-        }
-    }
-
     pub fn body(&self) -> &Bytes {
         &self.body
     }

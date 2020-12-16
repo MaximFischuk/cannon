@@ -3,7 +3,7 @@ use csv::{Reader, StringRecordsIntoIter};
 use derivative::*;
 use kstring::KString;
 use liquid::Parser;
-use liquid::{model::Value, Object};
+use liquid::{model::{find::Path as CapturePath, Value}, Object};
 use std::fs::File;
 use std::iter::FromIterator;
 use std::sync::Arc;
@@ -58,13 +58,6 @@ impl ContextPool {
             parser: Arc::new(liquid::ParserBuilder::with_stdlib().build().unwrap()),
             resources: HashMap::new(),
         }
-    }
-
-    pub fn push_vars<T>(&mut self, iter: T)
-    where
-        T: IntoIterator<Item = (KString, CaptureValue)>,
-    {
-        self.globals.extend(iter);
     }
 
     pub fn push_resource_file(&mut self, name: String, path: Box<Path>) {
@@ -139,16 +132,18 @@ impl Context {
         }
     }
 
-    pub fn find(&self, key: &str) -> Option<CaptureValue> {
-        let k = KString::from(key.to_owned());
-        self.variables.get(&k).map(Clone::clone)
-    }
-
     pub fn push_vars<T>(&mut self, iter: T)
     where
         T: IntoIterator<Item = (KString, CaptureValue)>,
     {
         self.variables.extend(iter);
+    }
+
+    pub fn find_path(&self, path: CapturePath) -> Option<CaptureValue> {
+        match liquid::model::find::find(&self.variables, path.as_slice()) {
+            Ok(found) => Some(found.into_owned()),
+            Err(_) => None,
+        }
     }
 
     pub fn next(&mut self) {

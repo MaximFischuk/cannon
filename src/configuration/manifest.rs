@@ -6,7 +6,7 @@ use jsonpath::Selector;
 use liquid::Object;
 use regex::Regex;
 use reqwest::Method;
-use serde::export::fmt::Debug;
+use serde::{Deserializer, export::fmt::Debug};
 use serde_derive::Deserialize;
 use serde_json::Value;
 use std::collections::HashMap;
@@ -69,31 +69,28 @@ pub enum Capture {
     Regex(#[serde(with = "serde_regex")] Regex),
 }
 
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum AssertParamValueVar {
+#[derive(Debug)]
+pub enum Variable {
     Value(liquid::model::Value),
-    Var(String),
+    Template(String),
+    Path(Vec<String>),
 }
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum AssertFunction {
-    Equal(AssertParamValueVar),
-    NotEqual(AssertParamValueVar),
+    Equal(Variable),
+    NotEqual(Variable),
+    Matches(Variable, #[serde(with = "serde_regex")] Regex),
 }
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "lowercase")]
-pub enum Functor {
-    Assert {
-        #[serde(flatten)]
-        function: AssertFunction,
+pub struct Assertion {
+    pub message: String,
 
-        #[serde(default)]
-        message: Option<String>,
-    },
-    Matches(#[serde(with = "serde_regex")] Regex),
+    #[serde(flatten)]
+    pub assert: Vec<AssertFunction>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -177,6 +174,9 @@ pub struct PipelineEntry {
     #[serde(default)]
     pub on: Vec<Operation>,
 
+    #[serde(default)]
+    pub assert: Vec<Assertion>,
+
     #[serde(with = "crate::configuration::deserialize::duration")]
     #[serde(default)]
     pub delay: Duration,
@@ -230,4 +230,23 @@ fn read_uri(uri: &Uri) -> Option<Vec<u8>> {
 
 fn default_repeats() -> u64 {
     1
+}
+
+impl <'de> serde::de::Deserialize<'de> for Variable {
+    fn deserialize<D>(deserializer: D) -> Result<Variable, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let value = liquid::model::Value::deserialize(deserializer)?;
+        if let Some(value_scalar) = value.clone().into_scalar() {
+            let value_string = value_scalar.into_string();
+            if value_string.contains("{{") {
+                return Ok(Variable::Template(value_string.into_string()));
+            } else if value_string.contains(".") {
+                let splited = value_string.split(".");
+                return Ok(Variable::Path(splited.map(str::to_owned).collect()));
+            }
+        }
+        Ok(Variable::Value(value))
+    }
 }
