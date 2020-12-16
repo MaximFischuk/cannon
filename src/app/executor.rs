@@ -1,4 +1,4 @@
-use crate::app::context::Context;
+use crate::{app::context::Context, configuration::manifest::Assertion};
 use crate::app::error::Error;
 use crate::app::hooks::Executable;
 use crate::app::hooks::ExecutionResult;
@@ -20,6 +20,7 @@ pub(crate) struct RunInfo {
     pub delay: Duration,
     pub captures: Vec<CaptureEntry>,
     pub operations: Vec<Operation>,
+    pub assertions: Vec<Assertion>
 }
 
 #[derive(Builder)]
@@ -36,6 +37,7 @@ impl RunInfo {
         delay: Duration,
         captures: Vec<CaptureEntry>,
         operations: Vec<Operation>,
+        assertions: Vec<Assertion>
     ) -> Self {
         Self {
             id: uuid::Uuid::new_v4(),
@@ -44,6 +46,7 @@ impl RunInfo {
             delay,
             captures,
             operations,
+            assertions
         }
     }
 }

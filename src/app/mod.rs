@@ -27,7 +27,7 @@ use std::time::Duration;
 use std::time::Instant;
 use tokio::sync::mpsc;
 
-use self::operation::Performable;
+use self::{assert::Assertable, operation::Performable};
 
 macro_rules! lock {
     ($name: expr) => {
@@ -65,6 +65,7 @@ impl App {
                     entry.delay,
                     entry.capture,
                     entry.on,
+                    entry.assert
                 );
                 context.push_contextual_vars(entry.vars, info.id);
                 match entry.job_type {
@@ -157,6 +158,11 @@ impl App {
                                 Ok(()) => {}
                                 Err(e) => error!("{:#?}", e),
                             }
+                        }
+                        for assertion in &info.assertions {
+                            let result = assertion.assert.assert(&local_context);
+
+                            info!("{}...{}", local_context.apply(assertion.message.as_str()), if result {"ok"} else {"failed"});
                         }
                     }
                     let mut locked_context = lock!(context);

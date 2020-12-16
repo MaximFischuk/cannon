@@ -16,7 +16,7 @@ impl Performable for Operation {
     fn perform(&self, ctx: &mut Context) -> Result<(), Error> {
         match self {
             Operation::Add(variable, arg) => {
-                let var = Variable::Template(variable.clone()).resolve(&ctx).unwrap();
+                let var = Variable::Path(vec![variable.clone()]).resolve(&ctx).unwrap();
                 let value = arg.clone().into_scalar().unwrap().to_integer().unwrap();
                 let varg = var.into_scalar().unwrap().to_integer().unwrap();
                 let exported =
@@ -24,7 +24,7 @@ impl Performable for Operation {
                 ctx.push_vars(exported.clone());
             }
             Operation::PushCsv(variable, path) => {
-                let var = Variable::Template(variable.clone()).resolve(&ctx).unwrap();
+                let var = Variable::Path(vec![variable.clone()]).resolve(&ctx).unwrap();
                 let exists = path.as_path().exists();
                 let mut wtr = csv::WriterBuilder::new().from_writer(vec![]);
                 match var {

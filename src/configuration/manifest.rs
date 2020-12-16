@@ -79,8 +79,8 @@ pub enum Variable {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum AssertFunction {
-    Equal(Variable),
-    NotEqual(Variable),
+    Equal(Variable, Variable),
+    NotEqual(Variable, Variable),
     Matches(Variable, #[serde(with = "serde_regex")] Regex),
 }
 
@@ -90,7 +90,7 @@ pub struct Assertion {
     pub message: String,
 
     #[serde(flatten)]
-    pub assert: Vec<AssertFunction>,
+    pub assert: AssertFunction,
 }
 
 #[derive(Debug, Deserialize)]
