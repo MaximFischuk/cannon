@@ -17,8 +17,7 @@ impl Performable for Operation {
         match self {
             Operation::Add(variable, arg) => {
                 let var = Variable::Path(vec![variable.clone()])
-                    .resolve(&ctx)
-                    .unwrap();
+                    .resolve(&ctx)?;
                 let value = arg.clone().into_scalar().unwrap().to_integer().unwrap();
                 let varg = var.into_scalar().unwrap().to_integer().unwrap();
                 let exported =
@@ -27,8 +26,7 @@ impl Performable for Operation {
             }
             Operation::PushCsv(variable, path) => {
                 let var = Variable::Path(vec![variable.clone()])
-                    .resolve(&ctx)
-                    .unwrap();
+                    .resolve(&ctx)?;
                 let exists = path.as_path().exists();
                 let mut wtr = csv::WriterBuilder::new().from_writer(vec![]);
                 match var {
