@@ -7,6 +7,8 @@ use http::{HeaderMap, HeaderValue};
 use liquid::Object;
 use serde_json::Value;
 
+use super::error::Error;
+
 pub type CaptureValue = liquid::model::Value;
 
 pub(crate) trait Capturable<T> {
@@ -14,7 +16,7 @@ pub(crate) trait Capturable<T> {
 }
 
 pub(crate) trait Resolvable {
-    fn resolve(&self, ctx: &Context) -> Result<CaptureValue, String>;
+    fn resolve(&self, ctx: &Context) -> Result<CaptureValue, Error>;
 }
 
 pub trait Convert<T> {
@@ -146,7 +148,7 @@ impl Capturable<String> for Capture {
 }
 
 impl Resolvable for Variable {
-    fn resolve(&self, ctx: &Context) -> Result<CaptureValue, String> {
+    fn resolve(&self, ctx: &Context) -> Result<CaptureValue, Error> {
         match self {
             Variable::Value(object) => Ok(object.clone()),
             Variable::Template(var_name) => Ok(CaptureValue::scalar(ctx.apply(var_name))),
@@ -155,7 +157,8 @@ impl Resolvable for Variable {
                 for i in 1..path.len() {
                     path_ob.push(path[i].as_str());
                 }
-                ctx.find_path(path_ob).ok_or("Not found".to_string())
+                let message = format!("Value {} not found", path_ob);
+                ctx.find_path(path_ob).ok_or(Error::ValueNotFound(message))
             }
         }
     }

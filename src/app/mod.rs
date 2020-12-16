@@ -65,7 +65,7 @@ impl App {
                     entry.delay,
                     entry.capture,
                     entry.on,
-                    entry.assert
+                    entry.assert,
                 );
                 context.push_contextual_vars(entry.vars, info.id);
                 match entry.job_type {
@@ -161,8 +161,14 @@ impl App {
                         }
                         for assertion in &info.assertions {
                             let result = assertion.assert.assert(&local_context);
-
-                            info!("{}...{}", local_context.apply(assertion.message.as_str()), if result {"ok"} else {"failed"});
+                            match result {
+                                Ok(result) => info!(
+                                    "{}...{}",
+                                    local_context.apply(assertion.message.as_str()),
+                                    if result { "ok" } else { "failed" }
+                                ),
+                                Err(e) => error!("{:#?}", e),
+                            }
                         }
                     }
                     let mut locked_context = lock!(context);

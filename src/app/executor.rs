@@ -1,9 +1,9 @@
-use crate::{app::context::Context, configuration::manifest::Assertion};
 use crate::app::error::Error;
 use crate::app::hooks::Executable;
 use crate::app::hooks::ExecutionResult;
 use crate::configuration::manifest::CaptureEntry;
 use crate::{app::capture::CaptureValue, configuration::manifest::Operation};
+use crate::{app::context::Context, configuration::manifest::Assertion};
 use bytes::Bytes;
 use core::slice::Iter;
 use std::{collections::HashMap, time::Duration};
@@ -20,7 +20,7 @@ pub(crate) struct RunInfo {
     pub delay: Duration,
     pub captures: Vec<CaptureEntry>,
     pub operations: Vec<Operation>,
-    pub assertions: Vec<Assertion>
+    pub assertions: Vec<Assertion>,
 }
 
 #[derive(Builder)]
@@ -37,7 +37,7 @@ impl RunInfo {
         delay: Duration,
         captures: Vec<CaptureEntry>,
         operations: Vec<Operation>,
-        assertions: Vec<Assertion>
+        assertions: Vec<Assertion>,
     ) -> Self {
         Self {
             id: uuid::Uuid::new_v4(),
@@ -46,7 +46,7 @@ impl RunInfo {
             delay,
             captures,
             operations,
-            assertions
+            assertions,
         }
     }
 }
