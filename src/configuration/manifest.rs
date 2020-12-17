@@ -3,6 +3,7 @@ use config::{Config, ConfigError, File};
 use derivative::*;
 use http::Uri;
 use jsonpath::Selector;
+use lazy_static::*;
 use liquid::Object;
 use regex::Regex;
 use reqwest::Method;
@@ -13,6 +14,11 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
 use std::time::Duration;
+
+lazy_static! {
+    static ref PATH_REGEX: Regex =
+        Regex::new(r"^\.([a-zA-Z0-9_\-]\.?){1,}$").expect("Compilation error");
+}
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -240,11 +246,16 @@ impl<'de> serde::de::Deserialize<'de> for Variable {
         let value = liquid::model::Value::deserialize(deserializer)?;
         if let Some(value_scalar) = value.clone().into_scalar() {
             let value_string = value_scalar.into_string();
-            if value_string.contains("{{") {
-                return Ok(Variable::Template(value_string.into_string()));
-            } else if value_string.contains(".") {
+            if PATH_REGEX.is_match(value_string.as_str()) {
                 let splited = value_string.split(".");
-                return Ok(Variable::Path(splited.map(str::to_owned).collect()));
+                return Ok(Variable::Path(
+                    splited
+                        .map(str::to_owned)
+                        .filter(|v| !v.is_empty())
+                        .collect(),
+                ));
+            } else {
+                return Ok(Variable::Template(value_string.into_string()));
             }
         }
         Ok(Variable::Value(value))
