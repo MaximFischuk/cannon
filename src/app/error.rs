@@ -10,6 +10,7 @@ pub enum Error {
     Connection(String),
     Syntax(String),
     Internal(String),
+    IncorrectValueType(String),
 }
 
 impl std::error::Error for Error {
@@ -21,6 +22,7 @@ impl std::error::Error for Error {
             Error::Connection(ref err) => err,
             Error::Syntax(ref err) => err,
             Error::Internal(ref err) => err,
+            Error::IncorrectValueType(ref err) => err,
         }
     }
 }
@@ -33,6 +35,7 @@ impl fmt::Display for Error {
             Error::Connection(ref err) => err.fmt(f),
             Error::Syntax(ref err) => err.fmt(f),
             Error::Internal(ref err) => err.fmt(f),
+            Error::IncorrectValueType(ref err) => err.fmt(f),
         }
     }
 }
@@ -81,6 +84,15 @@ impl fmt::Debug for Error {
                 Ok(())
             }
             Error::Internal(ref err) => {
+                let hr: String = repeat('~').take(79).collect();
+                writeln!(f, "Syntax(")?;
+                writeln!(f, "{}", hr)?;
+                writeln!(f, "{}", err)?;
+                writeln!(f, "{}", hr)?;
+                write!(f, ")")?;
+                Ok(())
+            }
+            Error::IncorrectValueType(ref err) => {
                 let hr: String = repeat('~').take(79).collect();
                 writeln!(f, "Syntax(")?;
                 writeln!(f, "{}", hr)?;
